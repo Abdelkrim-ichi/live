@@ -1,0 +1,11 @@
+.cslf-live-widget{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#fff;border:1px solid #eee;border-radius:10px;padding:12px}
+.cslf-live-summary{font-weight:600;margin-bottom:8px}
+.cslf-item{border-top:1px solid #f0f0f0;padding:10px 0}
+.cslf-item:first-child{border-top:none}
+.cslf-line{display:flex;align-items:center;gap:10px;justify-content:space-between}
+.cslf-time{font-weight:700;min-width:40px}
+.cslf-home,.cslf-away{display:flex;align-items:center;gap:6px}
+.cslf-score{font-weight:700}
+.cslf-details{margin-top:6px;font-size:14px;color:#333}
+.cslf-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+@media(max-width:520px){.cslf-line{flex-wrap:wrap;gap:6px}.cslf-detail-grid{grid-template-columns:1fr}}

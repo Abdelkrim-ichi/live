@@ -1,0 +1,79 @@
+.cslf-detail{--bg:#0f1419; --card:#0b1117; --muted:#9ca3af; --border:#1f2937; --live:#ef4444; --chip:#1f2937; --accent:#22c55e; --home:#ef4444; --away:#e5e7eb; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; background:var(--bg); color:#e5e7eb; margin:0; padding:16px}
+.cslf-container{max-width:1140px;margin:0 auto}
+.cslf-back{color:#cbd5e1;text-decoration:none;border:1px solid var(--border);padding:6px 10px;border-radius:8px;background:#111827}
+.cslf-headbar{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.cslf-last{font-size:12px;color:#9ca3af}
+.cslf-header{display:flex;align-items:center;gap:12px;margin:16px 0}
+.cslf-title .badge{background:var(--live);border-radius:999px;font-size:11px;padding:2px 8px;font-weight:800}
+.cslf-title .chip{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:12px;color:#cbd5e1;margin-left:6px}
+.cslf-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px}
+.cslf-section{font-weight:800;margin-bottom:8px}
+.muted{color:#9ca3af}
+
+/* Tabs */
+.cslf-tabs{display:flex;gap:24px;border-bottom:1px solid var(--border);margin-top:8px}
+.cslf-tabs button{background:transparent;border:none;color:#cbd5e1;padding:12px 4px;font-weight:700;cursor:pointer;position:relative}
+.cslf-tabs button.is-active{color:#fff}
+.cslf-tabs button.is-active::after{content:"";position:absolute;left:0;bottom:-1px;height:3px;width:100%;background:var(--accent);border-radius:999px}
+.cslf-pane{display:none;padding:14px 0}
+.cslf-pane.is-active{display:block}
+
+/* Résumé */
+.cslf-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
+.cslf-topstats{background:#111418;border:1px solid var(--border);border-radius:12px;padding:12px}
+.cslf-poswrap{margin:6px 0 10px;background:#161c22;border-radius:8px;overflow:hidden;border:1px solid #1d2630;display:flex;height:32px}
+.cslf-pos-home{background:var(--home);color:#fff;display:flex;align-items:center;justify-content:flex-end;font-weight:800;padding-right:8px;width:50%}
+.cslf-pos-away{flex:1;display:flex;align-items:center;justify-content:flex-start;color:#e5e7eb;padding-left:8px}
+.cslf-kpis{display:grid;grid-template-columns:1fr 1fr;row-gap:10px}
+.cslf-krow{display:grid;grid-template-columns:80px 1fr 80px;align-items:center;gap:8px}
+.pillL,.pillR{display:inline-flex;min-width:40px;justify-content:center;align-items:center;height:28px;border-radius:999px;font-weight:800}
+.pillL{background:var(--home);color:#fff}
+.pillR{background:#0f1419;border:1px solid #2a3542;color:#e5e7eb}
+
+/* Events */
+.cslf-event{display:flex;gap:10px;align-items:center;padding:8px;border-bottom:1px dashed var(--border)}
+.cslf-event .min{font-weight:800;color:#93c5fd;width:40px}
+
+/* Pitch big */
+.cslf-teams-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cslf-teams-head img{width:22px;height:22px;object-fit:contain}
+.cslf-pitch{position:relative;background:linear-gradient(#0b3d28,#0a3221);border:2px solid #0a472e;border-radius:12px;height:540px;margin-top:10px;overflow:hidden}
+.cslf-pitch .line{position:absolute;background:#c7f9cc}
+.cslf-pitch .center-line{left:50%;top:0;width:2px;height:100%}
+.cslf-pitch .circle{position:absolute;border:2px solid #c7f9cc;border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%);width:120px;height:120px}
+.cslf-pitch .goal-area{width:120px;height:260px;top:50%;transform:translateY(-50%);border:2px solid #c7f9cc;position:absolute;background:transparent}
+.cslf-pitch .goal-left{left:0} .cslf-pitch .goal-right{right:0}
+.player{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.dot{width:26px;height:26px;border-radius:50%;background:#ffd166;border:2px solid #111827;display:flex;align-items:center;justify-content:center;font-weight:800;color:#111}
+.pname{font-size:11px;margin-top:4px;max-width:120px;text-align:center;color:#e5e7eb;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+
+/* Pitch mini */
+.cslf-pitch-mini{position:relative;background:linear-gradient(#0b3d28,#0a3221);border:2px solid #0a472e;border-radius:12px;height:260px;overflow:hidden}
+.player-mini{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none}
+.dot-mini{width:22px;height:22px;border-radius:50%;background:#ffd166;border:2px solid #111827;display:flex;align-items:center;justify-content:center;font-weight:800;color:#111}
+.pname-mini{font-size:9px;margin-top:2px;max-width:80px;text-align:center;color:#e5e7eb;white-space:nowrap;text-overflow:ellipsis;overflow:hidden}
+
+/* Classement */
+.cslf-stand-filters{display:flex;gap:8px;margin-bottom:10px}
+.pill{background:#111827;border:1px solid #2a3542;color:#e5e7eb;border-radius:999px;padding:6px 10px;cursor:pointer}
+.pill.is-active{background:#16a34a;border-color:#16a34a}
+.cslf-league-head{display:flex;align-items:center;gap:10px;margin:8px 0}
+.cslf-league-head img{width:22px;height:22px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th,.tbl td{padding:8px;border-bottom:1px solid var(--border);text-align:left}
+.form{display:flex;gap:4px}
+.form .f{width:18px;height:18px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:11px}
+.f.G{background:#16a34a} .f.N{background:#6b7280} .f.P{background:#ef4444}
+
+/* H2H */
+.cslf-h2h-head{display:flex;align-items:center;justify-content:center;gap:30px;margin:8px 0 14px}
+.h2h-box{display:flex;flex-direction:column;align-items:center}
+.h2h-num{font-size:28px;font-weight:800}
+.h2h-num.home{color:#ef4444} .h2h-num.away{color:#e5e7eb}
+.cslf-h2h-filters{display:flex;gap:8px;margin:8px 0}
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)}
+.row .left{display:flex;align-items:center;gap:10px}
+.tag{background:#111827;border:1px solid #2a3542;color:#e5e7eb;border-radius:999px;padding:4px 8px;font-size:12px}
+
+.cslf-bad{color:#f87171;margin:8px 0}
+@media(max-width:760px){.cslf-grid{grid-template-columns:1fr}}

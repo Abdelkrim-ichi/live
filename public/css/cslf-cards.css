@@ -1,0 +1,77 @@
+
+/* Add-on skin to match the provided card design (non-destructive) */
+.cslf-results .cslf-rail { display:flex; gap:10px; overflow:auto; padding:6px 4px; scroll-snap-type:x mandatory; }
+.cslf-results .cslf-rail .cslf-card { 
+  scroll-snap-align:start;
+  display:block;
+  background:#fff;
+  border:1px solid #e6e8ec;
+  border-radius:6px;
+  box-shadow:0 1px 2px rgba(0,0,0,.06);
+  width:340px; max-width:340px; padding:0; text-decoration:none; color:#111;
+}
+.cslf-results .cslf-card .head{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:10px 12px; border-bottom:1px solid #e6e8ec;
+}
+.cslf-results .cslf-card .head .league{ font-weight:700; font-size:13px; text-transform:uppercase; color:#1f2937; }
+.cslf-results .cslf-card .head .sub{ color:#8a929c; font-size:12px; margin-top:2px; }
+.cslf-results .cslf-card .head .badge{ font-size:10px; padding:2px 6px; border:1px solid #e6e8ec; border-radius:10px; background:#f9fafb; color:#374151; white-space:nowrap; }
+.cslf-results .cslf-card .grid{
+  display:grid; grid-template-columns: 1fr auto; gap:8px; padding:10px 10px; align-items:center;
+  border-bottom:1px solid #e6e8ec;
+}
+.cslf-results .cslf-card .team{ display:flex; align-items:center; gap:8px; min-height:22px; }
+.cslf-results .cslf-card .team img{ width:20px; height:20px; object-fit:contain; }
+.cslf-results .cslf-card .team span{ font-size:13px; color:#111827; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cslf-results .cslf-card .score{ text-align:right; font-weight:700; font-size:20px; color:#111; }
+.cslf-results .cslf-card .meta{ display:none; } /* hide extra bottom line by default */
+.cslf-results .cslf-card p{ display:none !important; } /* if any stray <p> (odds) exists, hide without removing */
+
+@media (max-width:600px){
+  .cslf-results .cslf-rail .cslf-card{ width:300px; max-width:300px; }
+}
+
+
+/* Update grid to have a score cell per team row */
+.cslf-results .cslf-card .grid{
+  display:grid;
+  grid-template-columns: 1fr 28px;
+  grid-auto-rows:auto;
+  gap:8px 10px;
+  padding:10px 10px;
+  align-items:center;
+  border-bottom:1px solid #e6e8ec;
+}
+.cslf-results .cslf-card .team{ justify-content:flex-start; }
+.cslf-results .cslf-card .team.away{ }
+.cslf-results .cslf-card .score{
+  text-align:center;
+  font-weight:700;
+  font-size:16px;
+  line-height:26px;
+  border:1px solid #e6e8ec;
+  border-radius:6px;
+  min-width:28px; height:26px;
+  display:flex; align-items:center; justify-content:center;
+  color:#111;
+  background:#fff;
+}
+
+
+/* --- Strong override to force 2-column grid (teams left, scores right) --- */
+.cslf-results .cslf-card .grid{ 
+  display:grid !important; 
+  grid-template-columns: 1fr 32px !important; 
+  grid-auto-flow: row !important;
+  gap:8px 10px !important;
+}
+.cslf-results .cslf-card .team.home{ grid-column:1 !important; grid-row:1 !important; }
+.cslf-results .cslf-card .score.home{ grid-column:2 !important; grid-row:1 !important; }
+.cslf-results .cslf-card .team.away{ grid-column:1 !important; grid-row:2 !important; }
+.cslf-results .cslf-card .score.away{ grid-column:2 !important; grid-row:2 !important; }
+
+.cslf-results .cslf-card .score{
+  width:auto !important;
+  min-width:32px !important;
+}

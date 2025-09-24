@@ -1,0 +1,22 @@
+:root{ --primary:#3498db; --secondary:#2c3e50; --light:#ecf0f1; --border:#2a3542; --gray:#95a5a6; }
+.cslf-center{ color:var(--light); font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+.cslf-center .cslf-hdr{ background:#263140; padding:14px; border-radius:10px; border:1px solid var(--border); margin-bottom:16px; }
+.cslf-center .hdr-top{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.cslf-center .hdr-title{ font-weight:800; font-size:1.2rem; }
+.cslf-center .hdr-upd{ color:var(--gray); font-size:.9rem; }
+.cslf-center .hdr-teams{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.cslf-center .score{ font-size:2rem; font-weight:800; }
+.cslf-center .chip{ background:var(--secondary); padding:4px 10px; border-radius:999px; font-weight:700; font-size:.85rem; display:inline-block; }
+.cslf-center .cslf-tabs{ display:flex; gap:2px; background:#263140; border:1px solid var(--border); border-radius:10px; margin:14px 0; overflow:auto; }
+.cslf-center .tablink{ padding:12px 18px; border:0; background:transparent; color:#fff; font-weight:700; cursor:pointer; border-bottom:3px solid transparent; }
+.cslf-center .tablink.active{ color:var(--primary); border-bottom-color:var(--primary); }
+.cslf-center .tabpane{ display:none; background:#263140; border:1px solid var(--border); border-radius:10px; padding:16px; }
+.cslf-center .tabpane.active{ display:block; }
+.cslf-center .muted{ color:var(--gray); }
+.cslf-center .filters{ display:flex; gap:8px; margin-bottom:10px; }
+.cslf-center .pill, .cslf-center .btn-filter{ background:#2c3e50; color:#fff; border:1px solid var(--border); border-radius:999px; padding:6px 12px; cursor:pointer; }
+.cslf-center .pill.active, .cslf-center .btn-filter.active{ background:var(--primary); }
+.cslf-center .resume-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+.cslf-center .h2h-counters{ display:flex; justify-content:center; gap:32px; margin:10px 0 16px; }
+.cslf-center .h2h-num{ font-size:1.8rem; font-weight:800; }
+@media (max-width:860px){ .cslf-center .resume-grid{ grid-template-columns:1fr; } }
