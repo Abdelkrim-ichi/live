@@ -1832,13 +1832,46 @@
       var rating = games.rating || 'N/A';
       playerRating.textContent = rating;
       
-      // Check if player of the match
-      if (parseFloat(rating) >= 8.5) {
-        playerBadge.innerHTML = '<span class="cslf-badge-star">★</span>';
-        playerBadge.title = 'Joueur du match';
+      // Display rating in badge with color based on rating (same algorithm as composition)
+      if (rating !== 'N/A' && !isNaN(parseFloat(rating))) {
+        var ratingNum = parseFloat(rating);
+        var isMVP = ratingNum >= 8.5;
+        
+        // Add star for MVP like in composition
+        console.log('Rating:', ratingNum, 'isMVP:', isMVP);
+        playerBadge.textContent = ratingNum.toFixed(1) + (isMVP ? ' ⭐' : '');
+        playerBadge.className = 'cslf-player-badge';
+        
+        // Apply color based on rating (same as composition)
+        if (ratingNum < 5) {
+          playerBadge.style.backgroundColor = '#dc3545'; // Red for poor rating
+          playerBadge.style.border = '1px solid #dc3545';
+          playerBadge.title = 'Performance très faible';
+        } else if (ratingNum >= 5 && ratingNum < 7) {
+          playerBadge.style.backgroundColor = '#fd7e14'; // Orange for average rating
+          playerBadge.style.border = '1px solid #fd7e14';
+          playerBadge.title = 'Performance moyenne';
+        } else if (ratingNum >= 7 && ratingNum < 8.5) {
+          playerBadge.style.backgroundColor = '#28a745'; // Green for good rating
+          playerBadge.style.border = '1px solid #28a745';
+          playerBadge.title = 'Bonne performance';
+        } else if (ratingNum >= 8.5) {
+          playerBadge.style.backgroundColor = '#007bff'; // Blue for excellent rating
+          playerBadge.style.border = '1px solid #007bff';
+          playerBadge.title = 'Joueur du match';
+        }
+        
+        // Add special MVP styling like in composition
+        if (isMVP) {
+          playerBadge.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.8)';
+          playerBadge.style.border = '2px solid #ffd700';
+        }
       } else {
         playerBadge.innerHTML = '';
         playerBadge.title = '';
+        playerBadge.style.backgroundColor = '';
+        playerBadge.style.border = '';
+        playerBadge.style.boxShadow = '';
       }
       
       // Basic info
@@ -2053,13 +2086,46 @@
       var rating = games.rating || 'N/A';
       playerRating.textContent = rating;
       
-      // Check if player of the match
-      if (parseFloat(rating) >= 8.5) {
-        playerBadge.innerHTML = '<span class="cslf-badge-star">★</span>';
-        playerBadge.title = 'Joueur du match';
+      // Display rating in badge with color based on rating (same algorithm as composition)
+      if (rating !== 'N/A' && !isNaN(parseFloat(rating))) {
+        var ratingNum = parseFloat(rating);
+        var isMVP = ratingNum >= 8.5;
+        
+        // Add star for MVP like in composition
+        console.log('Rating:', ratingNum, 'isMVP:', isMVP);
+        playerBadge.textContent = ratingNum.toFixed(1) + (isMVP ? ' ⭐' : '');
+        playerBadge.className = 'cslf-player-badge';
+        
+        // Apply color based on rating (same as composition)
+        if (ratingNum < 5) {
+          playerBadge.style.backgroundColor = '#dc3545'; // Red for poor rating
+          playerBadge.style.border = '1px solid #dc3545';
+          playerBadge.title = 'Performance très faible';
+        } else if (ratingNum >= 5 && ratingNum < 7) {
+          playerBadge.style.backgroundColor = '#fd7e14'; // Orange for average rating
+          playerBadge.style.border = '1px solid #fd7e14';
+          playerBadge.title = 'Performance moyenne';
+        } else if (ratingNum >= 7 && ratingNum < 8.5) {
+          playerBadge.style.backgroundColor = '#28a745'; // Green for good rating
+          playerBadge.style.border = '1px solid #28a745';
+          playerBadge.title = 'Bonne performance';
+        } else if (ratingNum >= 8.5) {
+          playerBadge.style.backgroundColor = '#007bff'; // Blue for excellent rating
+          playerBadge.style.border = '1px solid #007bff';
+          playerBadge.title = 'Joueur du match';
+        }
+        
+        // Add special MVP styling like in composition
+        if (isMVP) {
+          playerBadge.style.boxShadow = '0 0 10px rgba(255, 215, 0, 0.8)';
+          playerBadge.style.border = '2px solid #ffd700';
+        }
       } else {
         playerBadge.innerHTML = '';
         playerBadge.title = '';
+        playerBadge.style.backgroundColor = '';
+        playerBadge.style.border = '';
+        playerBadge.style.boxShadow = '';
       }
       
       // Basic info
