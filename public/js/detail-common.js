@@ -31,7 +31,6 @@
   ready(($)=>{
     const C = w.CSLF_DETAIL || {};
     if(!C || !C.ajaxurl || !C.nonce){
-      console.warn("[CSLF][detail] ajaxurl/nonce not localized; using fallbacks");
     }
 
     w.CSLF = w.CSLF || {};
@@ -102,14 +101,11 @@
       },
 
       getList(inst, path, query){
-        console.log('[CSLF] Making proxy request:', { path, query });
         return NS.proxy(inst, path, query).then(
           (p)=> {
-            console.log('[CSLF] Proxy response:', p);
             return (p && p.success && p.data && Array.isArray(p.data.response)) ? p.data.response : [];
           },
           (err)=> {
-            console.error('[CSLF] Proxy request failed:', err);
             return [];
           }
         );

@@ -6,13 +6,11 @@
   ready(() => {
     const C = w.CSLF_RESULTS || {}
     if (!C.instanceId) {
-      console.error("[CSLF] missing instanceId")
       return
     }
 
     const root = $("#" + C.instanceId)
     if (!root.length) {
-      console.error("[CSLF] root container not found:", C.instanceId)
       return
     }
     const rail = root.find(".cslf-rail")[0]
@@ -335,7 +333,6 @@
       const leagues = groupLeagues(allowedList)
 
       if (!sel.length) {
-        console.warn("[CSLF] league select not found; skipping populate")
         return
       }
 

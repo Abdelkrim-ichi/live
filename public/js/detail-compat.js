@@ -5,7 +5,7 @@
 
   ready(($)=>{
     var Common = w.CSLF && w.CSLF.DetailCommon;
-    if(!Common){ console.error("[CSLF][detail] DetailCommon not found"); return; }
+    if(!Common){ return; }
 
     // Compatibility layer for old detail.js functionality
     d.addEventListener('DOMContentLoaded', function(){
@@ -26,17 +26,13 @@
         // Listen for players data from core
         Common.on(inst, 'players', function(e){
           var players = e.detail || [];
-          console.log('[CSLF] Compat module received players:', players);
           playersData = players;
-          console.log('[CSLF] Players data stored:', playersData.length, 'players');
         });
         
         // Listen for events data to get substitution information
         Common.on(inst, 'events', function(e){
           var events = e.detail || [];
-          console.log('[CSLF] Compat module received events:', events);
           eventsData = events;
-          console.log('[CSLF] Events data stored:', eventsData.length, 'events');
         });
         
         // Function to extract substitution data from events
@@ -65,7 +61,6 @@
             }
           });
           
-          console.log('[CSLF] Extracted substitution data:', substitutions);
           return substitutions;
         }
         
@@ -73,8 +68,6 @@
         function mergePlayersWithLineups(lineups, players, events) {
           if (!players || !lineups) return lineups;
           
-          console.log('[CSLF] Merging players data with lineups');
-          console.log('[CSLF] Players data structure:', players);
           
           // Extract substitution data from events
           var substitutionData = extractSubstitutionData(events);
@@ -174,8 +167,6 @@
             }
           });
           
-          console.log('[CSLF] Players map created with', Object.keys(playersMap).length, 'players');
-          console.log('[CSLF] Sample player data:', playersMap[Object.keys(playersMap)[0]]);
           
           // Merge data into lineups
           lineups.forEach(function(lineup) {
@@ -204,17 +195,12 @@
         
         Common.on(inst, 'lineups', function(e){
           var lineups = e.detail || [];
-          console.log('[CSLF] Compat module received lineups:', lineups);
-          console.log('[CSLF] Fixture data available:', !!fixtureData);
-          console.log('[CSLF] Players data available:', !!playersData);
           
           if (!lineups.length) {
-            console.log('[CSLF] No lineups data');
             return;
           }
           
           if (!fixtureData) {
-            console.log('[CSLF] No fixture data available yet');
             return;
           }
           
@@ -222,9 +208,7 @@
                   var enrichedLineups = lineups;
                   if (playersData && playersData.length > 0) {
                     enrichedLineups = mergePlayersWithLineups(lineups, playersData, eventsData);
-                    console.log('[CSLF] Lineups enriched with players data and substitution info');
                   } else {
-                    console.log('[CSLF] No players data available, using basic lineups');
                   }
           
           renderFormations(inst, enrichedLineups, fixtureData);
@@ -303,7 +287,6 @@
     }
 
     function renderFormations(inst, lineups, fx) {
-      console.log('[CSLF] renderFormations called with:', { lineups: lineups.length, fx });
       
       // Determine home and away teams from fixture data
       var homeTeamId = null;
@@ -313,7 +296,6 @@
         var fixture = fx[0];
         homeTeamId = fixture.teams?.home?.id;
         awayTeamId = fixture.teams?.away?.id;
-        console.log('[CSLF] Fixture team IDs:', { home: homeTeamId, away: awayTeamId });
       }
       
       // Find teams based on fixture data
@@ -323,18 +305,15 @@
       if (homeTeamId && awayTeamId) {
         H = lineups.find(x => x.team && x.team.id === homeTeamId);
         A = lineups.find(x => x.team && x.team.id === awayTeamId);
-        console.log('[CSLF] Teams found by fixture IDs:', { H: !!H, A: !!A });
       } else {
         // Fallback to first two teams
         H = lineups.find(x => x.team && x.team.id);
         A = lineups.find(x => x.team && x.team.id && x.team.id !== H?.team?.id);
-        console.log('[CSLF] Teams found by fallback:', { H: !!H, A: !!A });
       }
       
       var pitch = inst.byId('-pitch');
       var forms = inst.byId('-forms');
       
-      console.log('[CSLF] Found teams:', { H: !!H, A: !!A, pitch: !!pitch, forms: !!forms });
       
       if (!H || !A) {
         if (forms) forms.innerHTML = "Compositions indisponibles";
@@ -373,12 +352,9 @@
         formationHtml += '</div>';
         
         forms.innerHTML = formationHtml;
-        console.log('[CSLF] Set formations HTML with ratings and team logos:', formationHtml);
-        console.log('[CSLF] Forms element after update:', forms.innerHTML);
       }
       
       if (pitch) {
-        console.log('[CSLF] Rendering pitch with players');
         // Clear existing players
         pitch.querySelectorAll('.player').forEach(p => p.remove());
         
@@ -594,59 +570,35 @@
           }
         });
         
-        console.log('[CSLF] Best player found across both teams:', bestPlayer, 'with rating:', bestRating);
         
         // Render home team with proper formation positioning
         if (H.startXI && H.startXI.length) {
-          console.log('[CSLF] Rendering home team players:', H.startXI.length);
-          console.log('[CSLF] Home team player data:', H.startXI[0]);
-          console.log('[CSLF] Home team substitutes:', H.substitutes?.length || 0);
-          console.log('[CSLF] Home team coach:', H.coach);
-          console.log('[CSLF] Home team formation:', H.formation);
           
           // Debug: Check if players have grid and pos data
           if (H.startXI && H.startXI.length > 0) {
-            console.log('[CSLF] First player structure:', H.startXI[0]);
             if (H.startXI[0].player) {
-              console.log('[CSLF] Player grid:', H.startXI[0].player.grid);
-              console.log('[CSLF] Player pos:', H.startXI[0].player.pos);
-              console.log('[CSLF] Player full data:', H.startXI[0].player);
-              console.log('[CSLF] Player age:', H.startXI[0].player.age);
-              console.log('[CSLF] Player country:', H.startXI[0].player.country);
-              console.log('[CSLF] Player photo:', H.startXI[0].player.photo);
             }
           }
           
           // Position players according to formation (home team on left)
           positionPlayersByFormation(pitch, H.startXI, H.formation, true, bestPlayer);
         } else {
-          console.log('[CSLF] No home team players found');
         }
         
         // Render away team with proper formation positioning
         if (A.startXI && A.startXI.length) {
-          console.log('[CSLF] Rendering away team players:', A.startXI.length);
-          console.log('[CSLF] Away team player data:', A.startXI[0]);
-          console.log('[CSLF] Away team substitutes:', A.substitutes?.length || 0);
-          console.log('[CSLF] Away team coach:', A.coach);
-          console.log('[CSLF] Away team formation:', A.formation);
           
           // Debug: Check if players have grid and pos data
           if (A.startXI && A.startXI.length > 0) {
-            console.log('[CSLF] Away team first player structure:', A.startXI[0]);
             if (A.startXI[0].player) {
-              console.log('[CSLF] Away player grid:', A.startXI[0].player.grid);
-              console.log('[CSLF] Away player pos:', A.startXI[0].player.pos);
             }
           }
           
           // Position players according to formation (away team on right)
           positionPlayersByFormation(pitch, A.startXI, A.formation, false, bestPlayer);
         } else {
-          console.log('[CSLF] No away team players found');
         }
       } else {
-        console.log('[CSLF] Pitch element not found');
       }
       
       // Render substitutes and coach information
@@ -736,13 +688,11 @@
     }
 
     function positionPlayersByFormation(pitch, players, formation, isHome) {
-      console.log('[CSLF] Positioning players by formation:', formation, 'isHome:', isHome);
       
       // Use the working grid-based positioning from the HTML file
       var lineup = { startXI: players };
       var coords = computeCoordsFromGrid(lineup, isHome ? 'home' : 'away');
       
-      console.log('[CSLF] Grid coordinates:', coords);
       
       // Position each player using grid coordinates
       coords.forEach(function(coord, idx) {
@@ -755,7 +705,6 @@
     function addPlayerAtPosition(pitch, player, isHome, x, y, idx) {
       if (!pitch || !player) return;
       
-      console.log('[CSLF] Player data structure:', player);
       
       var playerName = player.player?.name || player.name || '';
       var playerNumber = player.player?.number || player.number || '';
@@ -768,19 +717,6 @@
       var playerCards = player.player?.cards || {};
       var playerGoals = player.player?.goals || {};
       
-      console.log('[CSLF] Player details:', { 
-        name: playerName, 
-        number: playerNumber, 
-        photo: playerPhoto, 
-        position: playerPosition,
-        rating: playerRating,
-        minutes: playerMinutes,
-        captain: playerCaptain,
-        substitute: playerSubstitute,
-        cards: playerCards,
-        goals: playerGoals
-      });
-      
       var playerEl = d.createElement('div');
       playerEl.className = 'player';
       playerEl.style.left = x + '%';
@@ -791,10 +727,8 @@
       // Create player dot with photo
       var playerDot = '';
       if (playerPhoto && playerPhoto !== '') {
-        console.log('[CSLF] Using player photo:', playerPhoto);
         playerDot = '<div class="dot" style="background-image: url(\'' + Common.esc(playerPhoto) + '\'); background-size: cover; background-position: center; width: 40px; height: 40px; border-radius: 50%; border: 3px solid ' + (isHome ? '#007bff' : '#dc3545') + '; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: white; text-shadow: 2px 2px 4px rgba(0,0,0,0.8); box-shadow: 0 2px 8px rgba(0,0,0,0.3);">' + playerNumber + '</div>';
       } else {
-        console.log('[CSLF] No photo available, using colored dot');
         playerDot = '<div class="dot" style="background: ' + (isHome ? '#007bff' : '#dc3545') + '; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">' + playerNumber + '</div>';
       }
       
@@ -830,7 +764,6 @@
         Common.esc(playerName) + '</div>';
         
       pitch.appendChild(playerEl);
-      console.log('[CSLF] Added player at position:', { name: playerName, number: playerNumber, x: x, y: y, isHome, hasPhoto: !!playerPhoto });
     }
     
     function parseGrid(grid) {
@@ -916,7 +849,6 @@
     }
 
     function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer) {
-      console.log('[CSLF] Positioning players by formation:', formation, 'isHome:', isHome);
       
       // Check if mobile layout
       var isMobile = pitch.classList.contains('mobile-layout');
@@ -938,7 +870,6 @@
         var lineup = { startXI: players };
         var coords = computeCoordsFromGrid(lineup, isHome ? 'home' : 'away');
         
-        console.log('[CSLF] Grid coordinates:', coords);
         
         // Position each player using grid coordinates
         coords.forEach(function(coord, idx) {
@@ -953,7 +884,6 @@
     function calculateFormationPositions(formation, isHome) {
       var positions = [];
       
-      console.log('[CSLF] Calculating positions for formation:', formation, 'isHome:', isHome);
       
       // Parse formation (e.g., "4-2-3-1" -> [4, 2, 3, 1] or already an array)
       var formationArray;
@@ -1017,15 +947,12 @@
         });
       }
       
-      console.log('[CSLF] Calculated positions:', positions);
       return positions;
     }
     
     function addPlayerAtPosition(pitch, player, isHome, x, y, idx, isMVP, isMobile) {
       if (!pitch || !player) return;
       
-      console.log('[CSLF] Player data structure:', player);
-      console.log('[CSLF] Is MVP:', isMVP, 'Is Mobile:', isMobile);
       
       // Extract player data
       var playerData = player.player || player;
@@ -1041,7 +968,6 @@
       var playerGoals = playerData.goals || {};
       var playerSubOut = playerData.subOut;
       
-      console.log('[CSLF] Added player:', {name: playerName, number: playerNumber, isHome: isHome, idx: idx, isMVP: isMVP});
       
       // Create player element using the exact working approach
       var el = document.createElement('div');
@@ -1360,7 +1286,6 @@
     }
     
     function renderSubstitutesAndCoach(inst, H, A) {
-      console.log('[CSLF] Rendering substitutes and coach info');
       
       // Create or find substitutes container
       var subsContainer = inst.root.querySelector('#subs-' + inst.id);
@@ -1708,7 +1633,6 @@
         
         if (subsHtml) {
           subsContainer.innerHTML = subsHtml;
-          console.log('[CSLF] Substitutes and coach info rendered with new design');
         } else {
           subsContainer.innerHTML = '<div class="muted">Informations sur les remplaçants et entraîneurs non disponibles</div>';
         }
@@ -1717,11 +1641,9 @@
 
     function addPlayer(pitch, player, isHome, idx) {
       if (!pitch || !player) {
-        console.log('[CSLF] addPlayer skipped:', { pitch: !!pitch, player: !!player });
         return;
       }
       
-      console.log('[CSLF] Player object structure:', player);
       
       // The player data might be nested differently
       var playerName = player.player?.name || player.name || '';
@@ -1753,7 +1675,6 @@
         Common.esc(playerName) + '</div>';
         
       pitch.appendChild(playerEl);
-      console.log('[CSLF] Added player:', { name: playerName, number: playerNumber, position: playerPosition, isHome, idx });
     }
   });
 })(window, document);

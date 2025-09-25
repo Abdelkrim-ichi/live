@@ -33,6 +33,18 @@
       if(t==='stats')      renderStatsTable(LOCAL.stats||[]);
     });
 
+    const urlParams = new URLSearchParams(location.search);
+    const initialTab = urlParams.get('tab') || 'resume';
+    const validTabs = ['resume', 'compos', 'stats', 'classement', 'h2h'];
+    const tabToShow = validTabs.includes(initialTab) ? initialTab : 'resume';
+
+    // Activate the initial tab
+    root.find('.cslf-tabs button').removeClass('is-active');
+    root.find(`.cslf-tabs button[data-tab="${tabToShow}"]`).addClass('is-active');
+    root.find('.cslf-pane').removeClass('is-active');
+    root.find(`.cslf-pane[data-pane="${tabToShow}"]`).addClass('is-active');
+
+    
     // Standings filter
     let activeStand='all';
     root.find('.cslf-stand-filters .pill').on('click', function(){
@@ -225,6 +237,7 @@
           const st = LOCAL.fx.fixture?.status?.short || '';
           if (isLive(st)) { setTimeout(loadAll, 60000); } // refresh only si live
         }
+        
         setLast();
       }).fail(function(xhr,s,e){
         root.find('#err-'+C.instanceId).text(`Erreur de chargement (${xhr.status})`).show();

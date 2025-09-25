@@ -7,11 +7,9 @@
   ready(($)=>{
     const CFG = w.CSLF_DETAIL || {};
     if (!CFG || !CFG.ajaxurl || !CFG.nonce) {
-      console.warn("[CSLF][detail] missing ajaxurl/nonce");
     }
 
     var Common = w.CSLF && w.CSLF.DetailCommon;
-    if(!Common){ console.error("[CSLF][detail] DetailCommon not found"); return; }
 
     function renderStatsTable(inst, stats){
       var box = inst.byId('-statsTable');
