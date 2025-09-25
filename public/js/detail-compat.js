@@ -1363,7 +1363,7 @@
         }
         subsHtml += '<div><div style="font-weight: bold; font-size: 16px;">' + Common.esc(H.coach?.name || H.coachName || 'N/A') + '</div><div style="color: #ccc; font-size: 12px;">Entraîneur</div></div>';
         subsHtml += '</div>';
-        subsHtml += '<div style="display: flex; align-items: center; gap: 12px;">';
+        subsHtml += '<div style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">';
         if (A.coach?.photo || A.coachPhoto) {
           subsHtml += '<img src="' + Common.esc(A.coach?.photo || A.coachPhoto) + '" alt="Coach" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">';
         } else {
@@ -1381,7 +1381,12 @@
         // Left column - Home team changements
         subsHtml += '<div class="changements-column">';
         if (H.substitutes && H.substitutes.length > 0) {
-          H.substitutes.slice(0, 4).forEach(function(sub) {
+          // Filter players who actually played (have minutes or rating)
+          H.substitutes.filter(function(sub) {
+            var playerMinutes = sub.player?.minutes || '';
+            var playerRating = sub.player?.rating || '';
+            return playerMinutes || playerRating;
+          }).forEach(function(sub) {
             var playerName = sub.player?.name || sub.name || '';
             var playerNumber = sub.player?.number || sub.number || '';
             var playerPhoto = sub.player?.photo || sub.photo || '';
@@ -1393,7 +1398,7 @@
             var playerCards = sub.player?.cards || {};
             var playerGoals = sub.player?.goals || {};
             
-            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;" data-player-id="' + (sub.player?.id || '') + '" data-player-name="' + Common.esc(playerName) + '">';
             if (playerPhoto && playerPhoto !== '') {
               subsHtml += '<img src="' + Common.esc(playerPhoto) + '" alt="' + Common.esc(playerName) + '" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">';
             } else {
@@ -1419,17 +1424,24 @@
             
             // Create substitution info
             var substitutionInfo = '';
-            if (playerSubstitute && playerMinutes) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + playerMinutes + "'</span>";
-            } else if (!playerSubstitute && playerMinutes && playerMinutes < 90) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + playerMinutes + "'</span>";
+            var subInTime = sub.player?.subIn || '';
+            var subOutTime = sub.player?.subOut || '';
+            if (playerSubstitute && subInTime) {
+              var timeRemaining = 90 - parseInt(subInTime);
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
+            } else if (!playerSubstitute && subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
             }
             
-            // Create performance stats
+            // Create performance stats with icons like in composition
             var performanceStats = '';
             if (playerGoals) {
-              if (playerGoals.total > 0) performanceStats += '<span style="color: #28a745; font-size: 12px; margin-left: 8px;">⚽ ' + playerGoals.total + '</span>';
-              if (playerGoals.assists > 0) performanceStats += '<span style="color: #007bff; font-size: 12px; margin-left: 8px;">🅰️ ' + playerGoals.assists + '</span>';
+              if (playerGoals.total > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #6c757d; border: 1px solid #6c757d; color: #fff; font-weight: 800; margin-left: 8px;">⚽' + (playerGoals.total > 1 ? '×' + playerGoals.total : '') + '</span>';
+              }
+              if (playerGoals.assists > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #1f2937; border: 1px solid #374151; color: #fff; font-weight: 800; margin-left: 8px;">🦶×' + playerGoals.assists + '</span>';
+              }
             }
             
             // Create cards info
@@ -1454,7 +1466,12 @@
         // Right column - Away team changements
         subsHtml += '<div class="changements-column">';
         if (A.substitutes && A.substitutes.length > 0) {
-          A.substitutes.slice(0, 4).forEach(function(sub) {
+          // Filter players who actually played (have minutes or rating)
+          A.substitutes.filter(function(sub) {
+            var playerMinutes = sub.player?.minutes || '';
+            var playerRating = sub.player?.rating || '';
+            return playerMinutes || playerRating;
+          }).forEach(function(sub) {
             var playerName = sub.player?.name || sub.name || '';
             var playerNumber = sub.player?.number || sub.number || '';
             var playerPhoto = sub.player?.photo || sub.photo || '';
@@ -1466,7 +1483,7 @@
             var playerCards = sub.player?.cards || {};
             var playerGoals = sub.player?.goals || {};
             
-            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;" data-player-id="' + (sub.player?.id || '') + '" data-player-name="' + Common.esc(playerName) + '">';
             if (playerPhoto && playerPhoto !== '') {
               subsHtml += '<img src="' + Common.esc(playerPhoto) + '" alt="' + Common.esc(playerName) + '" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">';
             } else {
@@ -1492,17 +1509,24 @@
             
             // Create substitution info
             var substitutionInfo = '';
-            if (playerSubstitute && playerMinutes) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + playerMinutes + "'</span>";
-            } else if (!playerSubstitute && playerMinutes && playerMinutes < 90) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + playerMinutes + "'</span>";
+            var subInTime = sub.player?.subIn || '';
+            var subOutTime = sub.player?.subOut || '';
+            if (playerSubstitute && subInTime) {
+              var timeRemaining = 90 - parseInt(subInTime);
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
+            } else if (!playerSubstitute && subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
             }
             
-            // Create performance stats
+            // Create performance stats with icons like in composition
             var performanceStats = '';
             if (playerGoals) {
-              if (playerGoals.total > 0) performanceStats += '<span style="color: #28a745; font-size: 12px; margin-left: 8px;">⚽ ' + playerGoals.total + '</span>';
-              if (playerGoals.assists > 0) performanceStats += '<span style="color: #007bff; font-size: 12px; margin-left: 8px;">🅰️ ' + playerGoals.assists + '</span>';
+              if (playerGoals.total > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #6c757d; border: 1px solid #6c757d; color: #fff; font-weight: 800; margin-left: 8px;">⚽' + (playerGoals.total > 1 ? '×' + playerGoals.total : '') + '</span>';
+              }
+              if (playerGoals.assists > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #1f2937; border: 1px solid #374151; color: #fff; font-weight: 800; margin-left: 8px;">🦶×' + playerGoals.assists + '</span>';
+              }
             }
             
             // Create cards info
@@ -1532,8 +1556,13 @@
         
         // Left column - Home team remplaçants
         subsHtml += '<div class="remplacants-column">';
-        if (H.substitutes && H.substitutes.length > 4) {
-          H.substitutes.slice(4).forEach(function(sub) {
+        if (H.substitutes && H.substitutes.length > 0) {
+          // Filter players who didn't play (no minutes or rating)
+          H.substitutes.filter(function(sub) {
+            var playerMinutes = sub.player?.minutes || '';
+            var playerRating = sub.player?.rating || '';
+            return !playerMinutes && !playerRating;
+          }).forEach(function(sub) {
             var playerName = sub.player?.name || sub.name || '';
             var playerNumber = sub.player?.number || sub.number || '';
             var playerPhoto = sub.player?.photo || sub.photo || '';
@@ -1545,7 +1574,7 @@
             var playerCards = sub.player?.cards || {};
             var playerGoals = sub.player?.goals || {};
             
-            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;" data-player-id="' + (sub.player?.id || '') + '" data-player-name="' + Common.esc(playerName) + '">';
             if (playerPhoto && playerPhoto !== '') {
               subsHtml += '<img src="' + Common.esc(playerPhoto) + '" alt="' + Common.esc(playerName) + '" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">';
             } else {
@@ -1571,17 +1600,24 @@
             
             // Create substitution info
             var substitutionInfo = '';
-            if (playerSubstitute && playerMinutes) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + playerMinutes + "'</span>";
-            } else if (!playerSubstitute && playerMinutes && playerMinutes < 90) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + playerMinutes + "'</span>";
+            var subInTime = sub.player?.subIn || '';
+            var subOutTime = sub.player?.subOut || '';
+            if (playerSubstitute && subInTime) {
+              var timeRemaining = 90 - parseInt(subInTime);
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
+            } else if (!playerSubstitute && subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
             }
             
-            // Create performance stats
+            // Create performance stats with icons like in composition
             var performanceStats = '';
             if (playerGoals) {
-              if (playerGoals.total > 0) performanceStats += '<span style="color: #28a745; font-size: 12px; margin-left: 8px;">⚽ ' + playerGoals.total + '</span>';
-              if (playerGoals.assists > 0) performanceStats += '<span style="color: #007bff; font-size: 12px; margin-left: 8px;">🅰️ ' + playerGoals.assists + '</span>';
+              if (playerGoals.total > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #6c757d; border: 1px solid #6c757d; color: #fff; font-weight: 800; margin-left: 8px;">⚽' + (playerGoals.total > 1 ? '×' + playerGoals.total : '') + '</span>';
+              }
+              if (playerGoals.assists > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #1f2937; border: 1px solid #374151; color: #fff; font-weight: 800; margin-left: 8px;">🦶×' + playerGoals.assists + '</span>';
+              }
             }
             
             // Create cards info
@@ -1605,8 +1641,13 @@
         
         // Right column - Away team remplaçants
         subsHtml += '<div class="remplacants-column">';
-        if (A.substitutes && A.substitutes.length > 4) {
-          A.substitutes.slice(4).forEach(function(sub) {
+        if (A.substitutes && A.substitutes.length > 0) {
+          // Filter players who didn't play (no minutes or rating)
+          A.substitutes.filter(function(sub) {
+            var playerMinutes = sub.player?.minutes || '';
+            var playerRating = sub.player?.rating || '';
+            return !playerMinutes && !playerRating;
+          }).forEach(function(sub) {
             var playerName = sub.player?.name || sub.name || '';
             var playerNumber = sub.player?.number || sub.number || '';
             var playerPhoto = sub.player?.photo || sub.photo || '';
@@ -1618,7 +1659,7 @@
             var playerCards = sub.player?.cards || {};
             var playerGoals = sub.player?.goals || {};
             
-            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
+            subsHtml += '<div class="player-entry" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px; padding: 12px; background: rgba(255,255,255,0.1); border-radius: 8px; cursor: pointer; transition: background-color 0.2s ease;" data-player-id="' + (sub.player?.id || '') + '" data-player-name="' + Common.esc(playerName) + '">';
             if (playerPhoto && playerPhoto !== '') {
               subsHtml += '<img src="' + Common.esc(playerPhoto) + '" alt="' + Common.esc(playerName) + '" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">';
             } else {
@@ -1644,17 +1685,24 @@
             
             // Create substitution info
             var substitutionInfo = '';
-            if (playerSubstitute && playerMinutes) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + playerMinutes + "'</span>";
-            } else if (!playerSubstitute && playerMinutes && playerMinutes < 90) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + playerMinutes + "'</span>";
+            var subInTime = sub.player?.subIn || '';
+            var subOutTime = sub.player?.subOut || '';
+            if (playerSubstitute && subInTime) {
+              var timeRemaining = 90 - parseInt(subInTime);
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
+            } else if (!playerSubstitute && subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
             }
             
-            // Create performance stats
+            // Create performance stats with icons like in composition
             var performanceStats = '';
             if (playerGoals) {
-              if (playerGoals.total > 0) performanceStats += '<span style="color: #28a745; font-size: 12px; margin-left: 8px;">⚽ ' + playerGoals.total + '</span>';
-              if (playerGoals.assists > 0) performanceStats += '<span style="color: #007bff; font-size: 12px; margin-left: 8px;">🅰️ ' + playerGoals.assists + '</span>';
+              if (playerGoals.total > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #6c757d; border: 1px solid #6c757d; color: #fff; font-weight: 800; margin-left: 8px;">⚽' + (playerGoals.total > 1 ? '×' + playerGoals.total : '') + '</span>';
+              }
+              if (playerGoals.assists > 0) {
+                performanceStats += '<span style="font-size: 10px; line-height: 1; padding: 2px 6px; border-radius: 6px; background: #1f2937; border: 1px solid #374151; color: #fff; font-weight: 800; margin-left: 8px;">🦶×' + playerGoals.assists + '</span>';
+              }
             }
             
             // Create cards info
@@ -1681,6 +1729,70 @@
         
         if (subsHtml) {
           subsContainer.innerHTML = subsHtml;
+          
+          // Add click handlers for changements players
+          var changementsPlayers = subsContainer.querySelectorAll('.changements-section .player-entry');
+          changementsPlayers.forEach(function(playerEl) {
+            playerEl.addEventListener('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              
+              var playerId = playerEl.getAttribute('data-player-id');
+              var playerName = playerEl.getAttribute('data-player-name');
+              
+              // Find the detailed player data from cache.players
+              var playerData = null;
+              
+              // First try to find in playersDataCompat (detailed data)
+              if (playersDataCompat) {
+                for (var team of playersDataCompat) {
+                  if (team.players) {
+                    for (var player of team.players) {
+                      if (player.player && (player.player.id == playerId || player.player.name === playerName)) {
+                        playerData = player;
+                        break;
+                      }
+                    }
+                  }
+                  if (playerData) break;
+                }
+              }
+              
+              // Fallback to substitutes data if detailed data not found
+              if (!playerData) {
+                if (H.substitutes) {
+                  for (var i = 0; i < H.substitutes.length; i++) {
+                    var sub = H.substitutes[i];
+                    if (sub.player && (sub.player.id == playerId || sub.player.name === playerName)) {
+                      playerData = sub;
+                      break;
+                    }
+                  }
+                }
+                if (!playerData && A.substitutes) {
+                  for (var i = 0; i < A.substitutes.length; i++) {
+                    var sub = A.substitutes[i];
+                    if (sub.player && (sub.player.id == playerId || sub.player.name === playerName)) {
+                      playerData = sub;
+                      break;
+                    }
+                  }
+                }
+              }
+              
+              if (playerData) {
+                showPlayerModalCompat(playerData, inst);
+              }
+            });
+            
+            // Add hover effects
+            playerEl.addEventListener('mouseenter', function() {
+              this.style.backgroundColor = 'rgba(255,255,255,0.2)';
+            });
+            playerEl.addEventListener('mouseleave', function() {
+              this.style.backgroundColor = 'rgba(255,255,255,0.1)';
+            });
+          });
         } else {
           subsContainer.innerHTML = '<div class="muted">Informations sur les remplaçants et entraîneurs non disponibles</div>';
         }
