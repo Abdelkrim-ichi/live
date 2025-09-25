@@ -337,7 +337,7 @@ class CSport_Live_Foot {
 
                 $allowed = [
                     '/fixtures','/fixtures/events','/fixtures/statistics','/fixtures/lineups',
-                    '/standings','/fixtures/headtohead','/leagues','/teams'
+                    '/standings','/fixtures/headtohead','/leagues','/teams', '/fixtures/players'
                 ];
                 if (!in_array('/'.ltrim($path,'/'), $allowed, true)) {
                     wp_send_json_error(['message' => 'Path not allowed'], 200);

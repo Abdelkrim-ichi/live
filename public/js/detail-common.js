@@ -60,7 +60,7 @@
         const ajaxUrl = resolveAjaxUrl();
         const payload = {
           action: 'cslf_api',
-          _lf_nonce: (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || inst.nonce || '',
+          _wpnonce: (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || inst.nonce || '',
           endpoint: 'proxy',
           path, query
         };
@@ -77,7 +77,7 @@
             if (msg && String(msg).toLowerCase().indexOf('invalid nonce') !== -1) {
               const ok = await refreshNonce();
               if (ok) {
-                payload._lf_nonce = (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || '';
+                payload._wpnonce = (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || '';
                 return doAjax(payload);
               }
             }
@@ -93,7 +93,7 @@
           if (xhr && (xhr.status === 403 || (xhr.responseText||'').toLowerCase().indexOf('invalid nonce') !== -1)) {
             const ok = await refreshNonce();
             if (ok) {
-              payload._lf_nonce = (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || '';
+              payload._wpnonce = (w.CSLF_DETAIL && w.CSLF_DETAIL.nonce) || '';
               return doAjax(payload);
             }
           }
@@ -102,9 +102,16 @@
       },
 
       getList(inst, path, query){
+        console.log('[CSLF] Making proxy request:', { path, query });
         return NS.proxy(inst, path, query).then(
-          (p)=> (p && p.success && p.data && Array.isArray(p.data.response)) ? p.data.response : [],
-          ()=> []
+          (p)=> {
+            console.log('[CSLF] Proxy response:', p);
+            return (p && p.success && p.data && Array.isArray(p.data.response)) ? p.data.response : [];
+          },
+          (err)=> {
+            console.error('[CSLF] Proxy request failed:', err);
+            return [];
+          }
         );
       },
     };

@@ -17,8 +17,9 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
     wp_enqueue_style('cslf-detail-css');
     wp_enqueue_script('cslf-tabs-js', CSLF_URL . 'public/js/tabs.js', ['jquery'], CSLF_VERSION, true);
     wp_enqueue_style('cslf-detail-css', CSLF_URL . 'public/css/detail.css', [], CSLF_VERSION);
-    // wp_enqueue_script('cslf-detail-js', CSLF_URL . 'public/js/detail.js', ['jquery'], CSLF_VERSION, true);
 
+
+    $id = uniqid('cslf_det_');
 
     // Split modules (order matters via dependencies)
     wp_enqueue_script('cslf-detail-common',     CSLF_URL . 'public/js/detail-common.js', ['jquery'],            CSLF_VERSION, true);
@@ -29,8 +30,6 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
     wp_enqueue_script('cslf-detail-standings',  CSLF_URL . 'public/js/detail-standings.js',['cslf-detail-core'],CSLF_VERSION, true);
     wp_enqueue_script('cslf-detail-h2h',        CSLF_URL . 'public/js/detail-h2h.js',    ['cslf-detail-core'],  CSLF_VERSION, true);
 
-
-    $id = uniqid('cslf_det_');
     wp_localize_script('cslf-detail-core', 'CSLF_DETAIL_BOOT', [
     ]);
 
@@ -50,15 +49,20 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
           <div class="cslf-last" id="last-<?php echo esc_attr($id); ?>"></div>
         </div>
 
-        <div class="cslf-header"><div class="cslf-title" id="title-<?php echo esc_attr($id); ?>"></div></div>
+        <div class="cslf-header">
+          <div class="cslf-title" id="hdrTitle-<?php echo esc_attr($id); ?>"></div>
+          <div class="cslf-last" id="lastUpdate-<?php echo esc_attr($id); ?>"></div>
+          <div class="cslf-score" id="score-<?php echo esc_attr($id); ?>"></div>
+          <div class="cslf-match-info" id="matchInfo-<?php echo esc_attr($id); ?>"></div>
+        </div>
 
         <div class="cslf-tabs">
-          <button class="is-active" data-tab="resume">Résumé</button>
-          <button data-tab="timeline">Fil du match</button>
-          <button data-tab="compos">Compositions</button>
-          <button data-tab="classement">Classement</button>
-          <button data-tab="stats">Statistiques</button>
-          <button data-tab="h2h">Face à face</button>
+          <button class="tablink is-active" data-tab="resume">Résumé</button>
+          <button class="tablink" data-tab="timeline">Fil du match</button>
+          <button class="tablink" data-tab="compos">Compositions</button>
+          <button class="tablink" data-tab="classement">Classement</button>
+          <button class="tablink" data-tab="stats">Statistiques</button>
+          <button class="tablink" data-tab="h2h">Face à face</button>
         </div>
 
         <div class="cslf-pane is-active" data-pane="resume">
@@ -67,35 +71,38 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
               <div class="cslf-section">Top stats</div>
               <div class="cslf-topstats">
                 <div class="cslf-poswrap">
-                  <div class="cslf-pos-home" id="posH-<?php echo $id; ?>">50%</div>
-                  <div class="cslf-pos-away" id="posA-<?php echo $id; ?>">50%</div>
+                  <div class="cslf-pos-home" id="<?php echo $id; ?>-posHome">50%</div>
+                  <div class="cslf-pos-away" id="<?php echo $id; ?>-posAway">50%</div>
+                  <div class="cslf-pos-bar" id="<?php echo $id; ?>-posBarHome" style="width:50%"></div>
                 </div>
                 <div class="cslf-kpis">
-                  <div class="cslf-krow"><span id="xgH-<?php echo $id; ?>" class="pillL">0.00</span><span>Expected goals (xG)</span><span id="xgA-<?php echo $id; ?>" class="pillR">0.00</span></div>
-                  <div class="cslf-krow"><span id="shH-<?php echo $id; ?>" class="pillL">0</span><span>Tirs totaux</span><span id="shA-<?php echo $id; ?>" class="pillR">0</span></div>
-                  <div class="cslf-krow"><span id="bcH-<?php echo $id; ?>" class="pillL">0</span><span>Grosses occasions</span><span id="bcA-<?php echo $id; ?>" class="pillR">0</span></div>
+                  <div class="cslf-krow"><span id="<?php echo $id; ?>-xgHome" class="pillL">0.00</span><span>Expected goals (xG)</span><span id="<?php echo $id; ?>-xgAway" class="pillR">0.00</span></div>
+                  <div class="cslf-krow"><span id="<?php echo $id; ?>-shotsHome" class="pillL">0</span><span>Tirs totaux</span><span id="<?php echo $id; ?>-shotsAway" class="pillR">0</span></div>
+                  <div class="cslf-krow"><span id="<?php echo $id; ?>-bcHome" class="pillL">0</span><span>Grosses occasions</span><span id="<?php echo $id; ?>-bcAway" class="pillR">0</span></div>
                 </div>
               </div>
               <div class="cslf-section" style="margin-top:14px">Derniers événements</div>
-              <div id="mini-<?php echo $id; ?>"></div>
+              <div id="<?php echo $id; ?>-eventsMini"></div>
             </div>
             <div>
               <div class="cslf-section">Stade (XI)</div>
               <div class="cslf-pitch-mini" id="pitch-mini-<?php echo $id; ?>"></div>
               <div class="cslf-section" style="margin-top:10px">Changements</div>
-              <div id="subs-<?php echo $id; ?>" class="muted">—</div>
+              <div id="<?php echo $id; ?>-subs" class="muted">—</div>
             </div>
           </div>
         </div>
 
-        <div class="cslf-pane" data-pane="timeline"><div class="cslf-card"><div class="cslf-section">Fil du match</div><div id="events-<?php echo $id; ?>"></div></div></div>
+        <div class="cslf-pane" data-pane="timeline"><div class="cslf-card"><div class="cslf-section">Fil du match</div><div id="<?php echo $id; ?>-events"></div></div></div>
 
         <div class="cslf-pane" data-pane="compos">
           <div class="cslf-card">
-            <div class="cslf-section">Stade & Formations</div>
-            <div class="cslf-teams-head"><div id="hh-<?php echo $id; ?>"></div><div id="ah-<?php echo $id; ?>"></div></div>
-            <div id="forms-<?php echo $id; ?>" class="muted" style="margin-bottom:8px"></div>
-            <div class="cslf-pitch" id="pitch-<?php echo $id; ?>"><div class="line center-line"></div><div class="circle"></div><div class="goal-area goal-left"></div><div class="goal-area goal-right"></div></div>
+            <div class="cslf-teams-head">
+              <div id="<?php echo $id; ?>-homeHead"></div>
+              <div id="<?php echo $id; ?>-awayHead"></div>
+            </div>
+            <div id="<?php echo $id; ?>-forms" class="muted" style="margin-bottom:8px"></div>
+            <div class="cslf-pitch" id="<?php echo $id; ?>-pitch"><div class="line center-line"></div><div class="circle"></div><div class="goal-area goal-left"></div><div class="goal-area goal-right"></div></div>
           </div>
         </div>
 
@@ -103,26 +110,30 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
           <div class="cslf-card">
             <div class="cslf-section">Classement</div>
             <div class="cslf-stand-filters">
-              <button class="pill is-active" data-stand="all">Tous</button>
-              <button class="pill" data-stand="home">Domicile</button>
-              <button class="pill" data-stand="away">Extérieur</button>
+              <button class="pill is-active" id="<?php echo $id; ?>-standAll" data-stand="all">Tous</button>
+              <button class="pill" id="<?php echo $id; ?>-standHome" data-stand="home">Domicile</button>
+              <button class="pill" id="<?php echo $id; ?>-standAway" data-stand="away">Extérieur</button>
             </div>
-            <div class="cslf-league-head"><img id="lgLogo-<?php echo $id; ?>" alt=""><div id="lgName-<?php echo $id; ?>"></div></div>
-            <div id="stand-<?php echo $id; ?>"></div>
+            <div class="cslf-league-head"><img id="<?php echo $id; ?>-lgLogo" alt=""><div id="<?php echo $id; ?>-lgName"></div></div>
+            <div id="<?php echo $id; ?>-standings"></div>
           </div>
         </div>
 
-        <div class="cslf-pane" data-pane="stats"><div class="cslf-card"><div class="cslf-section">Statistiques détaillées</div><div id="stats-<?php echo $id; ?>"></div></div></div>
+        <div class="cslf-pane" data-pane="stats"><div class="cslf-card"><div class="cslf-section">Statistiques détaillées</div><div id="<?php echo $id; ?>-statsTable"></div></div></div>
 
         <div class="cslf-pane" data-pane="h2h">
           <div class="cslf-card">
             <div class="cslf-section">Face à face</div>
-            <div class="cslf-h2h-head" id="h2h-head-<?php echo $id; ?>"></div>
-            <div class="cslf-h2h-filters">
-              <button class="pill" data-h2h="home">Domicile</button>
-              <button class="pill" data-h2h="comp">Cette compétition</button>
+            <div class="cslf-h2h-head">
+              <div class="h2h-box"><div class="h2h-num home" id="<?php echo $id; ?>-h2hHome">0</div><div>Victoires</div></div>
+              <div class="h2h-box"><div class="h2h-num" id="<?php echo $id; ?>-h2hDraws">0</div><div>Nuls</div></div>
+              <div class="h2h-box"><div class="h2h-num away" id="<?php echo $id; ?>-h2hAway">0</div><div>Victoires</div></div>
             </div>
-            <div id="h2h-<?php echo $id; ?>"></div>
+            <div class="cslf-h2h-filters">
+              <button class="pill" id="<?php echo $id; ?>-h2hHomeOnly">Domicile</button>
+              <button class="pill" id="<?php echo $id; ?>-h2hSameComp">Cette compétition</button>
+            </div>
+            <div id="<?php echo $id; ?>-h2h"></div>
           </div>
         </div>
 
