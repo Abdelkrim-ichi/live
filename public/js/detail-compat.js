@@ -7,6 +7,7 @@
     var Common = w.CSLF && w.CSLF.DetailCommon;
     if(!Common){ return; }
 
+    var playersDataCompat = null;
     // Compatibility layer for old detail.js functionality
     d.addEventListener('DOMContentLoaded', function(){
       var nodes = d.querySelectorAll('.cslf-detail[id], .cslf-detail[data-instance]');
@@ -16,6 +17,7 @@
         // Handle formations rendering
         var fixtureData = null;
         var playersData = null;
+        
         var eventsData = null;
         
         // Listen for fixture data from core
@@ -27,6 +29,8 @@
         Common.on(inst, 'players', function(e){
           var players = e.detail || [];
           playersData = players;
+          playersDataCompat = players; // Store for modal use
+          console.log('Received players data in compat:', players);
         });
         
         // Listen for events data to get substitution information
@@ -34,6 +38,9 @@
           var events = e.detail || [];
           eventsData = events;
         });
+
+        // Player modal functions for compat version
+        
         
         // Function to extract substitution data from events
         function extractSubstitutionData(events) {
@@ -220,6 +227,36 @@
         });
       });
     });
+
+    function findDetailedPlayerDataCompat(basicPlayerData, inst) {
+      console.log('Looking for detailed data in compat for:', basicPlayerData);
+      console.log('Available players data in compat:', playersDataCompat);
+      
+      // Try to find detailed player data from playersDataCompat
+      if (playersDataCompat) {
+        // Search through all teams and players
+        for (var i = 0; i < playersDataCompat.length; i++) {
+          var team = playersDataCompat[i];
+          if (team.players) {
+            for (var j = 0; j < team.players.length; j++) {
+              var player = team.players[j];
+              // Match by player ID or name
+              if (player.player && (
+                (basicPlayerData.id && player.player.id === basicPlayerData.id) ||
+                (basicPlayerData.name && player.player.name === basicPlayerData.name)
+              )) {
+                console.log('Found detailed player data in compat:', player);
+                return player;
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('No detailed data found in compat, using basic data');
+      // Fallback to basic player data if detailed data not found
+      return basicPlayerData;
+    }
     
     // Function to render mobile substitutes like the image
     function renderMobileSubstitutes(inst, lineups) {
@@ -581,7 +618,7 @@
           }
           
           // Position players according to formation (home team on left)
-          positionPlayersByFormation(pitch, H.startXI, H.formation, true, bestPlayer);
+          positionPlayersByFormation(pitch, H.startXI, H.formation, true, bestPlayer, inst);
         } else {
         }
         
@@ -595,7 +632,7 @@
           }
           
           // Position players according to formation (away team on right)
-          positionPlayersByFormation(pitch, A.startXI, A.formation, false, bestPlayer);
+          positionPlayersByFormation(pitch, A.startXI, A.formation, false, bestPlayer, inst);
         } else {
         }
       } else {
@@ -848,7 +885,7 @@
       return coords;
     }
 
-    function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer) {
+    function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer, inst) {
       
       // Check if mobile layout
       var isMobile = pitch.classList.contains('mobile-layout');
@@ -862,7 +899,7 @@
         coords.forEach(function(coord, idx) {
           if (idx < players.length) {
             var isMVP = players[idx] === bestPlayer;
-            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false);
+            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false, inst);
           }
         });
       } else {
@@ -875,7 +912,7 @@
         coords.forEach(function(coord, idx) {
           if (idx < players.length) {
             var isMVP = players[idx] === bestPlayer;
-            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false);
+            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false, inst);
           }
         });
       }
@@ -950,7 +987,7 @@
       return positions;
     }
     
-    function addPlayerAtPosition(pitch, player, isHome, x, y, idx, isMVP, isMobile) {
+    function addPlayerAtPosition(pitch, player, isHome, x, y, idx, isMVP, isMobile, inst) {
       if (!pitch || !player) return;
       
       
@@ -1257,6 +1294,17 @@
       // Assemble player element
       el.appendChild(wrap);
       el.appendChild(name);
+      
+      // Add click handler for player details modal
+      el.style.cursor = 'pointer';
+      el.style.pointerEvents = 'auto'; // Override the pointer-events: none
+      el.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        // Find detailed player data from cache.players
+        var detailedPlayerData = findDetailedPlayerDataCompat(playerData, inst);
+        showPlayerModalCompat(detailedPlayerData, inst);
+      });
       
       // Add to pitch
       pitch.appendChild(el);
@@ -1676,5 +1724,448 @@
         
       pitch.appendChild(playerEl);
     }
+
+    function showPlayerModalCompat(playerData, inst) {
+      // Create modal if it doesn't exist
+      var modal = document.getElementById('player-modal-compat-' + inst.id);
+      if (!modal) {
+        modal = createPlayerModalCompat(inst);
+        document.body.appendChild(modal);
+      }
+      
+      // Populate modal with player data
+      populatePlayerModalCompat(modal, playerData);
+      
+      // Show modal
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function createPlayerModalCompat(inst) {
+      var modal = document.createElement('div');
+      modal.id = 'player-modal-compat-' + inst.id;
+      modal.className = 'cslf-player-modal';
+      modal.innerHTML = 
+        '<div class="cslf-modal-overlay"></div>' +
+        '<div class="cslf-modal-content">' +
+          '<div class="cslf-modal-header">' +
+            '<div class="cslf-player-info">' +
+              '<div class="cslf-player-photo">' +
+                '<img src="" alt="" class="cslf-player-img">' +
+                '<div class="cslf-player-rating"></div>' +
+                '<div class="cslf-player-badge"></div>' +
+              '</div>' +
+              '<div class="cslf-player-name"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cslf-modal-body">' +
+            '<div class="cslf-player-basic">' +
+              '<div class="cslf-basic-item">' +
+                '<span class="cslf-basic-label">Position</span>' +
+                '<span class="cslf-basic-value"></span>' +
+              '</div>' +
+              '<div class="cslf-basic-item">' +
+                '<span class="cslf-basic-label">Âge</span>' +
+                '<span class="cslf-basic-value"></span>' +
+              '</div>' +
+              '<div class="cslf-basic-item">' +
+                '<span class="cslf-basic-label">Pays</span>' +
+                '<span class="cslf-basic-value"></span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cslf-player-data">' +
+              '<div class="cslf-data-title">Données du joueur</div>' +
+              '<div class="cslf-data-text"></div>' +
+            '</div>' +
+            '<div class="cslf-player-stats">' +
+              '<div class="cslf-stats-title">Meilleurs statistiques</div>' +
+              '<div class="cslf-stats-grid">' +
+                '<div class="cslf-stat-item">' +
+                  '<div class="cslf-stat-label">Minutes jouées</div>' +
+                  '<div class="cslf-stat-value"></div>' +
+                '</div>' +
+                '<div class="cslf-stat-item">' +
+                  '<div class="cslf-stat-label">Buts</div>' +
+                  '<div class="cslf-stat-value"></div>' +
+                '</div>' +
+                '<div class="cslf-stat-item">' +
+                  '<div class="cslf-stat-label">Passes décisives</div>' +
+                  '<div class="cslf-stat-value"></div>' +
+                '</div>' +
+                '<div class="cslf-stat-item">' +
+                  '<div class="cslf-stat-label">Nombre de tirs</div>' +
+                  '<div class="cslf-stat-value"></div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<button class="cslf-modal-close">×</button>' +
+        '</div>';
+      
+      // Add event listeners
+      modal.querySelector('.cslf-modal-overlay').addEventListener('click', function() { hidePlayerModalCompat(inst); });
+      modal.querySelector('.cslf-modal-close').addEventListener('click', function() { hidePlayerModalCompat(inst); });
+      
+      return modal;
+    }
+
+    function populatePlayerModalCompat(modal, playerData) {
+      // Basic player info
+      var playerImg = modal.querySelector('.cslf-player-img');
+      var playerName = modal.querySelector('.cslf-player-name');
+      var playerRating = modal.querySelector('.cslf-player-rating');
+      var playerBadge = modal.querySelector('.cslf-player-badge');
+      
+      // Extract player info from the detailed API structure
+      var player = playerData.player || {};
+      var stats = playerData.statistics && playerData.statistics[0] || {};
+      var games = stats.games || {};
+      
+      if (player.photo) {
+        playerImg.src = player.photo;
+        playerImg.alt = player.name || '';
+      }
+      
+      playerName.textContent = player.name || 'Joueur inconnu';
+      
+      // Rating and badge
+      var rating = games.rating || 'N/A';
+      playerRating.textContent = rating;
+      
+      // Check if player of the match
+      if (parseFloat(rating) >= 8.5) {
+        playerBadge.innerHTML = '<span class="cslf-badge-star">★</span>';
+        playerBadge.title = 'Joueur du match';
+      } else {
+        playerBadge.innerHTML = '';
+        playerBadge.title = '';
+      }
+      
+      // Basic info
+      var positionEl = modal.querySelector('.cslf-basic-item:nth-child(1) .cslf-basic-value');
+      var ageEl = modal.querySelector('.cslf-basic-item:nth-child(2) .cslf-basic-value');
+      var countryEl = modal.querySelector('.cslf-basic-item:nth-child(3) .cslf-basic-value');
+      
+      positionEl.textContent = games.position || 'N/A';
+      ageEl.textContent = player.age || 'N/A';
+      countryEl.textContent = player.nationality || 'N/A';
+      
+      // Player data text
+      var dataText = modal.querySelector('.cslf-data-text');
+      if (parseFloat(rating) >= 8.5) {
+        dataText.textContent = player.name + ' a été élu Joueur du match avec une note de ' + rating + '.';
+      } else {
+        dataText.textContent = 'Informations sur ' + player.name + '.';
+      }
+      
+      // Comprehensive statistics from the detailed API organized by specific categories
+      var statsData = [
+        // Informations générales
+        { category: 'Informations générales', label: 'Minutes jouées', value: games.minutes || '0' },
+        { category: 'Informations générales', label: 'Numéro', value: games.number || 'N/A' },
+        { category: 'Informations générales', label: 'Capitaine', value: games.captain ? 'Oui' : 'Non' },
+        
+        // Buts
+        { category: 'Buts', label: 'Buts', value: stats.goals && stats.goals.total || '0' },
+        { category: 'Buts', label: 'Passes décisives', value: stats.goals && stats.goals.assists || '0' },
+        { category: 'Buts', label: 'Arrêts', value: stats.goals && stats.goals.saves || '0' },
+        
+        // Passes
+        { category: 'Passes', label: 'Passes', value: stats.passes && stats.passes.total || '0' },
+        { category: 'Passes', label: 'Précision passes', value: (stats.passes && stats.passes.accuracy || '0') + '%' },
+        { category: 'Passes', label: 'Passes clés', value: stats.passes && stats.passes.key || '0' },
+        
+        // Tacles
+        { category: 'Tacles', label: 'Tacles', value: stats.tackles && stats.tackles.total || '0' },
+        { category: 'Tacles', label: 'Interceptions', value: stats.tackles && stats.tackles.interceptions || '0' },
+        { category: 'Tacles', label: 'Blocages', value: stats.tackles && stats.tackles.blocks || '0' },
+        
+        // Duels
+        { category: 'Duels', label: 'Duels gagnés', value: (stats.duels && stats.duels.won || '0') + '/' + (stats.duels && stats.duels.total || '0') },
+        
+        // Dribbles
+        { category: 'Dribbles', label: 'Dribbles', value: (stats.dribbles && stats.dribbles.success || '0') + '/' + (stats.dribbles && stats.dribbles.attempts || '0') },
+        
+        // Tirs
+        { category: 'Tirs', label: 'Tirs', value: stats.shots && stats.shots.total || '0' },
+        { category: 'Tirs', label: 'Tirs cadrés', value: stats.shots && stats.shots.on || '0' },
+        
+        // Fautes
+        { category: 'Fautes', label: 'Fautes subies', value: stats.fouls && stats.fouls.drawn || '0' },
+        { category: 'Fautes', label: 'Fautes commises', value: stats.fouls && stats.fouls.committed || '0' },
+        
+        // Cartons
+        { category: 'Cartons', label: 'Cartons jaunes', value: stats.cards && stats.cards.yellow || '0' },
+        { category: 'Cartons', label: 'Cartons rouges', value: stats.cards && stats.cards.red || '0' },
+        
+        // Hors-jeu
+        { category: 'Hors-jeu', label: 'Hors-jeu', value: stats.offsides || '0' }
+      ];
+      
+      // Update the stats grid with more comprehensive data organized by categories
+      var statsGrid = modal.querySelector('.cslf-stats-grid');
+      if (statsGrid) {
+        statsGrid.innerHTML = '';
+        
+        // Group stats by category
+        var categories = {};
+        statsData.forEach(function(stat) {
+          if (!categories[stat.category]) {
+            categories[stat.category] = [];
+          }
+          categories[stat.category].push(stat);
+        });
+        
+        // Create sections for each category
+        Object.keys(categories).forEach(function(categoryName) {
+          // Add category title
+          var categoryTitle = document.createElement('div');
+          categoryTitle.className = 'cslf-category-title';
+          categoryTitle.textContent = categoryName;
+          statsGrid.appendChild(categoryTitle);
+          
+          // Add stats for this category
+          categories[categoryName].forEach(function(stat) {
+            var statItem = document.createElement('div');
+            statItem.className = 'cslf-stat-item';
+            statItem.innerHTML = 
+              '<div class="cslf-stat-label">' + stat.label + '</div>' +
+              '<div class="cslf-stat-value">' + stat.value + '</div>';
+            statsGrid.appendChild(statItem);
+          });
+        });
+      }
+    }
+
+    function hidePlayerModalCompat(inst) {
+      var modal = document.getElementById('player-modal-compat-' + inst.id);
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    }
+
+    function showPlayerModalCompat(playerData, inst) {
+      // Create modal if it doesn't exist
+      var modal = document.getElementById('player-modal-compat-' + inst.id);
+      if (!modal) {
+        modal = createPlayerModalCompat(inst);
+        document.body.appendChild(modal);
+      }
+      
+      // Populate modal with player data
+      populatePlayerModalCompat(modal, playerData);
+      
+      // Show modal
+      modal.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function createPlayerModalCompat(inst) {
+      var modal = document.createElement('div');
+      modal.id = 'player-modal-compat-' + inst.id;
+      modal.className = 'cslf-player-modal';
+      modal.innerHTML = `
+        <div class="cslf-modal-overlay"></div>
+        <div class="cslf-modal-content">
+          <div class="cslf-modal-header">
+            <div class="cslf-player-info">
+              <div class="cslf-player-photo">
+                <img class="cslf-player-img" src="" alt="">
+                <div class="cslf-player-rating"></div>
+                <div class="cslf-player-badge"></div>
+              </div>
+              <div class="cslf-player-name"></div>
+            </div>
+          </div>
+          <div class="cslf-modal-body">
+            <div class="cslf-player-basic">
+              <div class="cslf-basic-item">
+                <span class="cslf-basic-label">Position</span>
+                <span class="cslf-basic-value"></span>
+              </div>
+              <div class="cslf-basic-item">
+                <span class="cslf-basic-label">Âge</span>
+                <span class="cslf-basic-value"></span>
+              </div>
+              <div class="cslf-basic-item">
+                <span class="cslf-basic-label">Pays</span>
+                <span class="cslf-basic-value"></span>
+              </div>
+            </div>
+            <div class="cslf-player-data">
+              <div class="cslf-data-title">Données du joueur</div>
+              <div class="cslf-data-text"></div>
+            </div>
+            <div class="cslf-player-stats">
+              <div class="cslf-stats-title">Meilleurs statistiques</div>
+              <div class="cslf-stats-grid">
+                <div class="cslf-stat-item">
+                  <div class="cslf-stat-label">Minutes jouées</div>
+                  <div class="cslf-stat-value"></div>
+                </div>
+                <div class="cslf-stat-item">
+                  <div class="cslf-stat-label">Buts</div>
+                  <div class="cslf-stat-value"></div>
+                </div>
+                <div class="cslf-stat-item">
+                  <div class="cslf-stat-label">Passes décisives</div>
+                  <div class="cslf-stat-value"></div>
+                </div>
+                <div class="cslf-stat-item">
+                  <div class="cslf-stat-label">Nombre de tirs</div>
+                  <div class="cslf-stat-value"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button class="cslf-modal-close">×</button>
+        </div>
+      `;
+      
+      // Add event listeners
+      modal.querySelector('.cslf-modal-overlay').addEventListener('click', function() { hidePlayerModalCompat(inst); });
+      modal.querySelector('.cslf-modal-close').addEventListener('click', function() { hidePlayerModalCompat(inst); });
+      
+      return modal;
+    }
+
+    function populatePlayerModalCompat(modal, playerData) {
+      // Extract player info from the detailed API structure
+      var player = playerData.player || {};
+      var stats = playerData.statistics && playerData.statistics[0] || {};
+      var games = stats.games || {};
+      
+      // Basic player info
+      var playerImg = modal.querySelector('.cslf-player-img');
+      var playerName = modal.querySelector('.cslf-player-name');
+      var playerRating = modal.querySelector('.cslf-player-rating');
+      var playerBadge = modal.querySelector('.cslf-player-badge');
+      
+      if (player.photo) {
+        playerImg.src = player.photo;
+        playerImg.alt = player.name || '';
+      }
+      
+      playerName.textContent = player.name || 'Joueur inconnu';
+      
+      // Rating and badge
+      var rating = games.rating || 'N/A';
+      playerRating.textContent = rating;
+      
+      // Check if player of the match
+      if (parseFloat(rating) >= 8.5) {
+        playerBadge.innerHTML = '<span class="cslf-badge-star">★</span>';
+        playerBadge.title = 'Joueur du match';
+      } else {
+        playerBadge.innerHTML = '';
+        playerBadge.title = '';
+      }
+      
+      // Basic info
+      var positionEl = modal.querySelector('.cslf-basic-item:nth-child(1) .cslf-basic-value');
+      var ageEl = modal.querySelector('.cslf-basic-item:nth-child(2) .cslf-basic-value');
+      var countryEl = modal.querySelector('.cslf-basic-item:nth-child(3) .cslf-basic-value');
+      
+      positionEl.textContent = games.position || 'N/A';
+      ageEl.textContent = player.age || 'N/A';
+      countryEl.textContent = player.nationality || 'N/A';
+      
+      // Player data text
+      var dataText = modal.querySelector('.cslf-data-text');
+      if (parseFloat(rating) >= 8.5) {
+        dataText.textContent = player.name + ' a été élu Joueur du match avec une note de ' + rating + '.';
+      } else {
+        dataText.textContent = 'Informations sur ' + player.name + '.';
+      }
+      
+      // Comprehensive statistics from the detailed API organized by specific categories
+      var statsData = [
+        // Informations générales
+        { category: 'Informations générales', label: 'Minutes jouées', value: games.minutes || '0' },
+        { category: 'Informations générales', label: 'Numéro', value: games.number || 'N/A' },
+        { category: 'Informations générales', label: 'Capitaine', value: games.captain ? 'Oui' : 'Non' },
+        
+        // Buts
+        { category: 'Buts', label: 'Buts', value: stats.goals && stats.goals.total || '0' },
+        { category: 'Buts', label: 'Passes décisives', value: stats.goals && stats.goals.assists || '0' },
+        { category: 'Buts', label: 'Arrêts', value: stats.goals && stats.goals.saves || '0' },
+        
+        // Passes
+        { category: 'Passes', label: 'Passes', value: stats.passes && stats.passes.total || '0' },
+        { category: 'Passes', label: 'Précision passes', value: (stats.passes && stats.passes.accuracy || '0') + '%' },
+        { category: 'Passes', label: 'Passes clés', value: stats.passes && stats.passes.key || '0' },
+        
+        // Tacles
+        { category: 'Tacles', label: 'Tacles', value: stats.tackles && stats.tackles.total || '0' },
+        { category: 'Tacles', label: 'Interceptions', value: stats.tackles && stats.tackles.interceptions || '0' },
+        { category: 'Tacles', label: 'Blocages', value: stats.tackles && stats.tackles.blocks || '0' },
+        
+        // Duels
+        { category: 'Duels', label: 'Duels gagnés', value: (stats.duels && stats.duels.won || '0') + '/' + (stats.duels && stats.duels.total || '0') },
+        
+        // Dribbles
+        { category: 'Dribbles', label: 'Dribbles', value: (stats.dribbles && stats.dribbles.success || '0') + '/' + (stats.dribbles && stats.dribbles.attempts || '0') },
+        
+        // Tirs
+        { category: 'Tirs', label: 'Tirs', value: stats.shots && stats.shots.total || '0' },
+        { category: 'Tirs', label: 'Tirs cadrés', value: stats.shots && stats.shots.on || '0' },
+        
+        // Fautes
+        { category: 'Fautes', label: 'Fautes subies', value: stats.fouls && stats.fouls.drawn || '0' },
+        { category: 'Fautes', label: 'Fautes commises', value: stats.fouls && stats.fouls.committed || '0' },
+        
+        // Cartons
+        { category: 'Cartons', label: 'Cartons jaunes', value: stats.cards && stats.cards.yellow || '0' },
+        { category: 'Cartons', label: 'Cartons rouges', value: stats.cards && stats.cards.red || '0' },
+        
+        // Hors-jeu
+        { category: 'Hors-jeu', label: 'Hors-jeu', value: stats.offsides || '0' }
+      ];
+      
+      // Update the stats grid with more comprehensive data organized by categories
+      var statsGrid = modal.querySelector('.cslf-stats-grid');
+      if (statsGrid) {
+        statsGrid.innerHTML = '';
+        
+        // Group stats by category
+        var categories = {};
+        statsData.forEach(function(stat) {
+          if (!categories[stat.category]) {
+            categories[stat.category] = [];
+          }
+          categories[stat.category].push(stat);
+        });
+        
+        // Create sections for each category
+        Object.keys(categories).forEach(function(categoryName) {
+          // Add category title
+          var categoryTitle = document.createElement('div');
+          categoryTitle.className = 'cslf-category-title';
+          categoryTitle.textContent = categoryName;
+          statsGrid.appendChild(categoryTitle);
+          
+          // Add stats for this category
+          categories[categoryName].forEach(function(stat) {
+            var statItem = document.createElement('div');
+            statItem.className = 'cslf-stat-item';
+            statItem.innerHTML = 
+              '<div class="cslf-stat-label">' + stat.label + '</div>' +
+              '<div class="cslf-stat-value">' + stat.value + '</div>';
+            statsGrid.appendChild(statItem);
+          });
+        });
+      }
+    }
+
+    function hidePlayerModalCompat(inst) {
+      var modal = document.getElementById('player-modal-compat-' + inst.id);
+      if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    }
+
+    
   });
 })(window, document);

@@ -76,4 +76,260 @@
 .tag{background:#111827;border:1px solid #2a3542;color:#e5e7eb;border-radius:999px;padding:4px 8px;font-size:12px}
 
 .cslf-bad{color:#f87171;margin:8px 0}
-@media(max-width:760px){.cslf-grid{grid-template-columns:1fr}}
+
+/* Player Modal */
+.cslf-player-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.cslf-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(4px);
+}
+
+.cslf-modal-content {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.cslf-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cslf-player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cslf-player-photo {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.cslf-player-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--border);
+}
+
+.cslf-player-rating {
+  position: absolute;
+  bottom: -5px;
+  right: -5px;
+  background: var(--accent);
+  color: #000;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  border: 2px solid var(--card);
+}
+
+.cslf-player-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  border: 2px solid var(--card);
+}
+
+.cslf-badge-star {
+  color: #fbbf24;
+}
+
+.cslf-player-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #e5e7eb;
+  text-align: center;
+}
+
+.cslf-modal-body {
+  padding: 20px;
+}
+
+.cslf-player-basic {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.cslf-basic-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.cslf-basic-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.cslf-basic-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e5e7eb;
+}
+
+.cslf-player-data {
+  margin-bottom: 20px;
+}
+
+.cslf-data-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e5e7eb;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cslf-data-title::before {
+  content: "🏴";
+  font-size: 12px;
+}
+
+.cslf-data-text {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.cslf-player-stats {
+  margin-bottom: 20px;
+}
+
+.cslf-stats-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e5e7eb;
+  margin-bottom: 12px;
+}
+
+.cslf-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.cslf-stat-item {
+  background: #111827;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cslf-stat-label {
+  font-size: 12px;
+  color: #ffffff;
+  flex: 1;
+}
+
+.cslf-stat-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #e5e7eb;
+  text-align: right;
+}
+
+.cslf-category-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #ffffff;
+  margin: 16px 0 8px 0;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cslf-category-title:first-child {
+  margin-top: 0;
+}
+
+.cslf-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 24px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.cslf-modal-close:hover {
+  background: var(--border);
+  color: #e5e7eb;
+}
+
+@media(max-width:760px){
+  .cslf-grid{grid-template-columns:1fr}
+  .cslf-modal-content {
+    width: 95%;
+    margin: 10px;
+  }
+  .cslf-player-basic {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .cslf-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
