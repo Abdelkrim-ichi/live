@@ -168,6 +168,13 @@
         awayHead: inst.root.querySelector("#" + inst.id + "-awayHead"),
         score: inst.root.querySelector("#score-" + inst.id),
         matchInfo: inst.root.querySelector("#matchInfo-" + inst.id),
+        // New scoreboard elements
+        homeName: inst.root.querySelector("#homeName-" + inst.id),
+        awayName: inst.root.querySelector("#awayName-" + inst.id),
+        homeLogo: inst.root.querySelector("#homeLogo-" + inst.id),
+        awayLogo: inst.root.querySelector("#awayLogo-" + inst.id),
+        matchTime: inst.root.querySelector("#matchTime-" + inst.id),
+        locationInfo: inst.root.querySelector("#locationInfo-" + inst.id),
       }
       if (!FX || !FX[0]) {
         return;
@@ -207,33 +214,49 @@
         e.hdrTitle.innerHTML = titleHtml;
       }
 
-      // if (e.homeHead) {
-      //   e.homeHead.innerHTML =
-      //     (home.logo
-      //       ? '<div class="team-logo"><img src="' + C.esc(home.logo) + '" alt=""></div>'
-      //       : '<div class="team-logo"></div>') +
-      //     '<div class="team-name">' +
-      //     C.esc(home.name) +
-      //     "</div>"
-      // }
-      // if (e.awayHead) {
-      //   e.awayHead.innerHTML =
-      //     (away.logo
-      //       ? '<div class="team-logo"><img src="' + C.esc(away.logo) + '" alt=""></div>'
-      //       : '<div class="team-logo"></div>') +
-      //     '<div class="team-name">' +
-      //     C.esc(away.name) +
-      //     "</div>"
-      // }
+      // Populate new scoreboard elements
+      if (e.homeName) {
+        e.homeName.textContent = C.esc(home.name);
+      }
+      if (e.awayName) {
+        e.awayName.textContent = C.esc(away.name);
+      }
+      if (e.homeLogo && home.logo) {
+        e.homeLogo.src = home.logo;
+        e.homeLogo.alt = C.esc(home.name);
+      }
+      if (e.awayLogo && away.logo) {
+        e.awayLogo.src = away.logo;
+        e.awayLogo.alt = C.esc(away.name);
+      }
       if (e.score) {
         e.score.textContent = C.val(m.goals.home, "-") + " - " + C.val(m.goals.away, "-")
+      }
+      if (e.matchTime) {
+        var timeText = "";
+        if (st.short && st.short !== "NS" && st.short !== "FT" && st.elapsed != null) {
+          timeText = st.elapsed + "'";
+        } else if (st.short === "FT") {
+          timeText = "FT";
+        } else {
+          timeText = C.fmtTime(m.fixture.date, inst.tz);
+        }
+        e.matchTime.textContent = timeText;
       }
 
       if (e.matchInfo) {
         e.matchInfo.innerHTML = [
-          m.league.country ? '<div class="chip">' + C.esc(m.league.country) + "</div>" : "",
-          m.fixture.venue?.name ? '<div class="chip">' + C.esc(m.fixture.venue.name) + "</div>" : "",
-          '<div class="chip">' + C.liveTxt(st.short) + "</div>",
+          '<div class="chip">' + C.esc(m.league.name) + "</div>",
+          (m.league.round ? '<div class="chip">' + C.esc(m.league.round) + "</div>" : ""),
+          '<div class="chip">' + C.fmtDate(m.fixture.date, inst.tz) + "</div>",
+        ].join("")
+      }
+
+      if (e.locationInfo) {
+        e.locationInfo.innerHTML = [
+          m.league.country ? '<div>' + C.esc(m.league.country) + "</div>" : "",
+          m.fixture.venue?.name ? '<div>' + C.esc(m.fixture.venue.name) + "</div>" : "",
+          '<div>' + C.liveTxt(st.short) + "</div>",
         ].join("")
       }
 

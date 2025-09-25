@@ -49,11 +49,33 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
           <div class="cslf-last" id="last-<?php echo esc_attr($id); ?>"></div>
         </div>
 
-        <div class="cslf-header">
-          <div class="cslf-title" id="hdrTitle-<?php echo esc_attr($id); ?>"></div>
-          <div class="cslf-last" id="lastUpdate-<?php echo esc_attr($id); ?>"></div>
-          <div class="cslf-score" id="score-<?php echo esc_attr($id); ?>"></div>
-          <div class="cslf-match-info" id="matchInfo-<?php echo esc_attr($id); ?>"></div>
+        <!-- Match Header with Scoreboard Style -->
+        <div class="cslf-match-header">
+          <div class="cslf-match-info" id="matchInfo-<?php echo esc_attr($id); ?>">
+            <!-- Match info chips will be populated here -->
+          </div>
+          <div class="cslf-last-update" id="lastUpdate-<?php echo esc_attr($id); ?>"></div>
+          
+          <div class="cslf-scoreboard">
+            <div class="cslf-team home" id="homeTeam-<?php echo esc_attr($id); ?>">
+              <img class="cslf-team-logo" id="homeLogo-<?php echo esc_attr($id); ?>" src="" alt="">
+              <div class="cslf-team-name" id="homeName-<?php echo esc_attr($id); ?>">—</div>
+            </div>
+            
+            <div class="cslf-score-section">
+              <div class="cslf-score" id="score-<?php echo esc_attr($id); ?>">0 - 0</div>
+              <div class="cslf-match-time" id="matchTime-<?php echo esc_attr($id); ?>">18:52</div>
+            </div>
+            
+            <div class="cslf-team away" id="awayTeam-<?php echo esc_attr($id); ?>">
+              <img class="cslf-team-logo" id="awayLogo-<?php echo esc_attr($id); ?>" src="" alt="">
+              <div class="cslf-team-name" id="awayName-<?php echo esc_attr($id); ?>">—</div>
+            </div>
+          </div>
+          
+          <div class="cslf-location-info" id="locationInfo-<?php echo esc_attr($id); ?>">
+            <!-- Location info will be populated here -->
+          </div>
         </div>
 
         <div class="cslf-tabs">
