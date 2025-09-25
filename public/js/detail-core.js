@@ -207,24 +207,24 @@
         e.hdrTitle.innerHTML = titleHtml;
       }
 
-      if (e.homeHead) {
-        e.homeHead.innerHTML =
-          (home.logo
-            ? '<div class="team-logo"><img src="' + C.esc(home.logo) + '" alt=""></div>'
-            : '<div class="team-logo"></div>') +
-          '<div class="team-name">' +
-          C.esc(home.name) +
-          "</div>"
-      }
-      if (e.awayHead) {
-        e.awayHead.innerHTML =
-          (away.logo
-            ? '<div class="team-logo"><img src="' + C.esc(away.logo) + '" alt=""></div>'
-            : '<div class="team-logo"></div>') +
-          '<div class="team-name">' +
-          C.esc(away.name) +
-          "</div>"
-      }
+      // if (e.homeHead) {
+      //   e.homeHead.innerHTML =
+      //     (home.logo
+      //       ? '<div class="team-logo"><img src="' + C.esc(home.logo) + '" alt=""></div>'
+      //       : '<div class="team-logo"></div>') +
+      //     '<div class="team-name">' +
+      //     C.esc(home.name) +
+      //     "</div>"
+      // }
+      // if (e.awayHead) {
+      //   e.awayHead.innerHTML =
+      //     (away.logo
+      //       ? '<div class="team-logo"><img src="' + C.esc(away.logo) + '" alt=""></div>'
+      //       : '<div class="team-logo"></div>') +
+      //     '<div class="team-name">' +
+      //     C.esc(away.name) +
+      //     "</div>"
+      // }
       if (e.score) {
         e.score.textContent = C.val(m.goals.home, "-") + " - " + C.val(m.goals.away, "-")
       }
