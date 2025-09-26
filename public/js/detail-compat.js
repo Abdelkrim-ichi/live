@@ -101,8 +101,8 @@
                     rating: stats.games ? stats.games.rating : null,
                     captain: stats.games ? stats.games.captain : false,
                     substitute: stats.games ? stats.games.substitute : false,
-                    subOut: stats.games && stats.games.substitute === false && stats.games.minutes < 90 ? stats.games.minutes : null,
-                    subIn: stats.games && stats.games.substitute === true ? stats.games.minutes : null,
+                    subOut: null, // Will be set from events data if player was actually substituted
+                    subIn: null,  // Will be set from events data if player was actually substituted
                     
                     // Performance stats
                     goals: stats.goals ? {
@@ -174,6 +174,13 @@
             }
           });
           
+          // Apply substitution data from events to players
+          Object.keys(substitutionData).forEach(function(playerId) {
+            if (playersMap[playerId]) {
+              playersMap[playerId].subOut = substitutionData[playerId].subOut;
+              playersMap[playerId].subIn = substitutionData[playerId].subIn;
+            }
+          });
           
           // Merge data into lineups
           lineups.forEach(function(lineup) {
@@ -220,10 +227,6 @@
           
           renderFormations(inst, enrichedLineups, fixtureData);
         
-        // Add mobile substitutes section
-        if (window.innerWidth <= 768) {
-          renderMobileSubstitutes(inst, enrichedLineups);
-        }
         });
       });
     });
@@ -259,69 +262,6 @@
     }
     
     // Function to render mobile substitutes like the image
-    function renderMobileSubstitutes(inst, lineups) {
-      var pitch = inst.byId('-pitch');
-      if (!pitch) return;
-      
-      // Create mobile substitutes container
-      var mobileSubs = document.createElement('div');
-      mobileSubs.className = 'cslf-mobile-subs';
-      mobileSubs.innerHTML = '<h3>Entraineur</h3><div class="cslf-coaches"></div><h3>Changements</h3><div class="cslf-substitutions"></div>';
-      
-      // Add coaches
-      var coachesContainer = mobileSubs.querySelector('.cslf-coaches');
-      lineups.forEach(function(lineup) {
-        if (lineup.coach) {
-          var coachDiv = document.createElement('div');
-          coachDiv.className = 'cslf-coach';
-          coachDiv.innerHTML = '<img src="' + (lineup.coach.photo || '') + '" alt="' + lineup.coach.name + '"><div class="cslf-coach-name">' + lineup.coach.name + '</div>';
-          coachesContainer.appendChild(coachDiv);
-        }
-      });
-      
-      // Add substitutions
-      var subsContainer = mobileSubs.querySelector('.cslf-substitutions');
-      var allSubstitutions = [];
-      
-      lineups.forEach(function(lineup) {
-        if (lineup.substitutes) {
-          lineup.substitutes.forEach(function(sub) {
-            var playerData = sub.player || sub;
-            if (playerData.subIn) {
-              allSubstitutions.push({
-                player: playerData,
-                minute: playerData.subIn,
-                rating: playerData.rating,
-                name: playerData.name,
-                number: playerData.number,
-                position: getPositionName(playerData.position || playerData.pos),
-                photo: playerData.photo
-              });
-            }
-          });
-        }
-      });
-      
-      // Sort by minute and create grid
-      allSubstitutions.sort(function(a, b) { return a.minute - b.minute; });
-      
-      allSubstitutions.forEach(function(sub) {
-        var subDiv = document.createElement('div');
-        subDiv.className = 'cslf-sub-player';
-        subDiv.innerHTML = 
-          '<div class="cslf-sub-minute">' + sub.minute + "'</div>" +
-          '<img src="' + (sub.photo || '') + '" alt="' + sub.name + '" class="cslf-sub-player-photo">' +
-          '<div class="cslf-sub-rating">' + (sub.rating || 'N/A') + '</div>' +
-          '<div class="cslf-sub-info">' +
-            '<div class="cslf-sub-name">' + (sub.number || '') + ' ' + sub.name + '</div>' +
-            '<div class="cslf-sub-position">' + sub.position + '</div>' +
-          '</div>';
-        subsContainer.appendChild(subDiv);
-      });
-      
-      // Insert after pitch
-      pitch.parentNode.insertBefore(mobileSubs, pitch.nextSibling);
-    }
 
     function renderFormations(inst, lineups, fx) {
       
@@ -395,136 +335,118 @@
         // Clear existing players
         pitch.querySelectorAll('.player').forEach(p => p.remove());
         
-        // Add responsive classes and mobile layout
+        // Add responsive classes
         pitch.classList.add('cslf-pitch');
-        if (window.innerWidth <= 768) {
-          pitch.classList.add('mobile-layout');
+        
+        // Apply mobile player layout with JavaScript
+        function applyMobilePlayerLayout() {
+          if (window.innerWidth <= 768) {
+            var players = pitch.querySelectorAll('.player');
+            players.forEach(function(player) {
+              // Force mobile layout
+              player.style.display = 'flex';
+              player.style.flexDirection = 'column';
+              player.style.alignItems = 'center';
+              player.style.textAlign = 'center';
+              
+              // Get elements
+              var dot = player.querySelector('.dot');
+              var name = player.querySelector('.name');
+              var tags = player.querySelector('.tags');
+              
+              if (dot) {
+                dot.style.order = '1';
+                dot.style.marginBottom = '6px';
+                dot.style.marginRight = '0';
+                dot.style.marginTop = '0';
+                dot.style.width = '32px';
+                dot.style.height = '32px';
+                dot.style.fontSize = '10px';
+              }
+              
+              if (name) {
+                name.style.order = '2';
+                name.style.marginTop = '0';
+                name.style.marginBottom = '0';
+                name.style.fontSize = '11px';
+                name.style.fontWeight = 'bold';
+                name.style.color = 'white';
+                name.style.textAlign = 'center';
+                name.style.lineHeight = '1.2';
+              }
+              
+              if (tags) {
+                tags.style.order = '3';
+                tags.style.marginTop = '4px';
+                tags.style.display = 'flex';
+                tags.style.justifyContent = 'center';
+              }
+              
+              // Adjust player container
+              player.style.minWidth = '50px';
+              player.style.maxWidth = '70px';
+            });
+          } else {
+            // Reset for desktop
+            var players = pitch.querySelectorAll('.player');
+            players.forEach(function(player) {
+              player.style.display = '';
+              player.style.flexDirection = '';
+              player.style.alignItems = '';
+              player.style.textAlign = '';
+              player.style.minWidth = '';
+              player.style.maxWidth = '';
+              
+              var dot = player.querySelector('.dot');
+              var name = player.querySelector('.name');
+              var tags = player.querySelector('.tags');
+              
+              if (dot) {
+                dot.style.order = '';
+                dot.style.marginBottom = '';
+                dot.style.marginRight = '';
+                dot.style.marginTop = '';
+                dot.style.width = '';
+                dot.style.height = '';
+                dot.style.fontSize = '';
+              }
+              
+              if (name) {
+                name.style.order = '';
+                name.style.marginTop = '';
+                name.style.marginBottom = '';
+                name.style.fontSize = '';
+                name.style.fontWeight = '';
+                name.style.color = '';
+                name.style.textAlign = '';
+                name.style.lineHeight = '';
+              }
+              
+              if (tags) {
+                tags.style.order = '';
+                tags.style.marginTop = '';
+                tags.style.display = '';
+                tags.style.justifyContent = '';
+              }
+            });
+          }
         }
+        
+        // Apply mobile layout after players are added
+        setTimeout(function() {
+          applyMobilePlayerLayout();
+        }, 200);
+        
+        // Apply on resize
+        window.addEventListener('resize', function() {
+          setTimeout(applyMobilePlayerLayout, 100);
+        });
         
         // Add responsive CSS if not already added
         if (!document.getElementById('cslf-mobile-styles')) {
           var style = document.createElement('style');
           style.id = 'cslf-mobile-styles';
           style.textContent = `
-            /* Mobile substitutes design */
-            .cslf-mobile-subs {
-              display: none;
-            }
-            
-            @media (max-width: 768px) {
-              .cslf-mobile-subs {
-                display: block;
-                background: #1a1a1a;
-                color: white;
-                padding: 15px;
-                margin-top: 20px;
-                border-radius: 8px;
-              }
-              
-              .cslf-mobile-subs h3 {
-                text-align: center;
-                margin: 0 0 20px 0;
-                font-size: 18px;
-                font-weight: bold;
-              }
-              
-              .cslf-coaches {
-                display: flex;
-                justify-content: space-around;
-                margin-bottom: 30px;
-              }
-              
-              .cslf-coach {
-                text-align: center;
-              }
-              
-              .cslf-coach img {
-                width: 60px;
-                height: 60px;
-                border-radius: 50%;
-                object-fit: cover;
-                margin-bottom: 8px;
-              }
-              
-              .cslf-coach-name {
-                font-size: 14px;
-                font-weight: bold;
-              }
-              
-              .cslf-substitutions {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 15px;
-              }
-              
-              .cslf-sub-player {
-                display: flex;
-                align-items: center;
-                background: rgba(255,255,255,0.1);
-                border-radius: 8px;
-                padding: 10px;
-                position: relative;
-              }
-              
-              .cslf-sub-minute {
-                background: #28a745;
-                color: white;
-                border-radius: 50%;
-                width: 30px;
-                height: 30px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-size: 12px;
-                font-weight: bold;
-                margin-right: 10px;
-                position: relative;
-              }
-              
-              .cslf-sub-minute::after {
-                content: '→';
-                position: absolute;
-                right: -15px;
-                color: white;
-                font-size: 12px;
-              }
-              
-              .cslf-sub-player-photo {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                object-fit: cover;
-                margin-right: 10px;
-                position: relative;
-              }
-              
-              .cslf-sub-rating {
-                position: absolute;
-                top: -5px;
-                right: -5px;
-                background: #fd7e14;
-                color: white;
-                border-radius: 12px;
-                padding: 2px 6px;
-                font-size: 10px;
-                font-weight: bold;
-              }
-              
-              .cslf-sub-info {
-                flex: 1;
-              }
-              
-              .cslf-sub-name {
-                font-size: 12px;
-                font-weight: bold;
-                margin-bottom: 2px;
-              }
-              
-              .cslf-sub-position {
-                font-size: 10px;
-                color: #ccc;
-              }
-            }
             .cslf-pitch {
               position: relative;
               background: #2d5016;
@@ -533,62 +455,62 @@
               overflow: hidden;
             }
             
-            .cslf-pitch.mobile-layout {
-              transform: rotate(90deg);
-              transform-origin: center;
-              width: 100vh;
-              height: 100vw;
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              margin-top: -50vw;
-              margin-left: -50vh;
-            }
             
-            .cslf-pitch.mobile-layout .player {
-              position: static !important;
-              display: flex;
-              align-items: center;
-              background: rgba(255,255,255,0.1);
-              border-radius: 8px;
-              padding: 8px;
-              margin: 2px 0;
-              width: 100%;
-              box-sizing: border-box;
-            }
-            
-            .cslf-pitch.mobile-layout .player .dot {
-              margin-right: 10px;
-              flex-shrink: 0;
-            }
-            
-            .cslf-pitch.mobile-layout .player .name {
-              flex: 1;
-              text-align: left;
-              margin: 0;
-              font-size: 12px;
-            }
-            
-            .cslf-pitch.mobile-layout .player .tags {
-              position: static !important;
-              display: flex;
-              gap: 4px;
-              margin-left: auto;
-            }
-            
-            .cslf-pitch.mobile-layout .player .tags > div {
-              font-size: 10px;
-              padding: 2px 4px;
-            }
-            
+            /* Mobile layout: image up, name down - like the changements section */
             @media (max-width: 768px) {
               .cslf-pitch {
                 min-height: auto;
+              }
+              
+              .cslf-pitch .player {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+              }
+              
+              .cslf-pitch .player .dot {
+                order: 1;
+                margin-bottom: 6px;
+                margin-right: 0;
+                margin-top: 0;
+              }
+              
+              .cslf-pitch .player .name {
+                order: 2;
+                margin-top: 0;
+                margin-bottom: 0;
+                font-size: 11px;
+                font-weight: bold;
+                color: white;
+                text-align: center;
+                line-height: 1.2;
+              }
+              
+              .cslf-pitch .player .tags {
+                order: 3;
+                margin-top: 4px;
+                justify-content: center;
+              }
+              
+              /* Make player dots smaller on mobile for better fit */
+              .cslf-pitch .player .dot {
+                width: 32px;
+                height: 32px;
+                font-size: 10px;
+              }
+              
+              /* Adjust player positioning for better mobile layout */
+              .cslf-pitch .player {
+                min-width: 50px;
+                max-width: 70px;
               }
             }
           `;
           document.head.appendChild(style);
         }
+
+
+        
         
         // Find the best player across both teams for MVP
         var bestPlayer = null;
@@ -886,36 +808,17 @@
     }
 
     function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer, inst) {
+      // Use normal positioning for all layouts
+      var lineup = { startXI: players };
+      var coords = computeCoordsFromGrid(lineup, isHome ? 'home' : 'away');
       
-      // Check if mobile layout
-      var isMobile = pitch.classList.contains('mobile-layout');
-      
-      if (isMobile) {
-        // Mobile layout: just rotate the stadium, use normal positioning
-        var lineup = { startXI: players };
-        var coords = computeCoordsFromGrid(lineup, isHome ? 'home' : 'away');
-        
-        // Position each player using grid coordinates (will be rotated)
-        coords.forEach(function(coord, idx) {
-          if (idx < players.length) {
-            var isMVP = players[idx] === bestPlayer;
-            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false, inst);
-          }
-        });
-      } else {
-        // Desktop layout: use grid positioning
-        var lineup = { startXI: players };
-        var coords = computeCoordsFromGrid(lineup, isHome ? 'home' : 'away');
-        
-        
-        // Position each player using grid coordinates
-        coords.forEach(function(coord, idx) {
-          if (idx < players.length) {
-            var isMVP = players[idx] === bestPlayer;
-            addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false, inst);
-          }
-        });
-      }
+      // Position each player using grid coordinates
+      coords.forEach(function(coord, idx) {
+        if (idx < players.length) {
+          var isMVP = players[idx] === bestPlayer;
+          addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, false, inst);
+        }
+      });
     }
     
     function calculateFormationPositions(formation, isHome) {
@@ -1310,15 +1213,22 @@
       pitch.appendChild(el);
     }
     
-    function getPositionName(pos) {
-      var positions = {
-        'G': 'Gardien',
-        'D': 'Défenseur', 
-        'M': 'Milieu de terrain',
-        'F': 'Attaquant'
-      };
-      return positions[pos] || 'Attaquant';
-    }
+   // Helper to get first name only
+   function getFirstName(fullName) {
+     if (!fullName || fullName === 'N/A') return 'N/A';
+     var names = fullName.trim().split(' ');
+     return names[0] || fullName;
+   }
+   
+   function getPositionName(pos) {
+     var positions = {
+       'G': 'Gardien',
+       'D': 'Défenseur', 
+       'M': 'Milieu de terrain',
+       'F': 'Attaquant'
+     };
+     return positions[pos] || 'Attaquant';
+   }
     
     function getPlayerDetails(player) {
       return {
@@ -1351,7 +1261,10 @@
       }
       
       if (subsContainer) {
-        var subsHtml = '<div style="background: #2c2c2c; color: #fff; padding: 20px; border-radius: 8px;">';
+        var subsHtml = '';
+        
+        // Desktop style - original (kept as is)
+        subsHtml += '<div style="background: #2c2c2c; color: #fff; padding: 20px; border-radius: 8px;">';
         
         // Coaches section
         subsHtml += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding: 15px; background: rgba(255,255,255,0.1); border-radius: 8px;">';
@@ -1361,7 +1274,7 @@
         } else {
           subsHtml += '<div style="width: 50px; height: 50px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; font-size: 16px;">👨‍💼</div>';
         }
-        subsHtml += '<div><div style="font-weight: bold; font-size: 16px;">' + Common.esc(H.coach?.name || H.coachName || 'N/A') + '</div><div style="color: #ccc; font-size: 12px;">Entraîneur</div></div>';
+        subsHtml += '<div><div style="font-weight: bold; font-size: 16px;">' + Common.esc(getFirstName(H.coach?.name || H.coachName || 'N/A')) + '</div><div style="color: #ccc; font-size: 12px;">Entraîneur</div></div>';
         subsHtml += '</div>';
         subsHtml += '<div style="display: flex; align-items: center; gap: 12px; justify-content: flex-end;">';
         if (A.coach?.photo || A.coachPhoto) {
@@ -1369,7 +1282,7 @@
         } else {
           subsHtml += '<div style="width: 50px; height: 50px; border-radius: 50%; background: #666; display: flex; align-items: center; justify-content: center; font-size: 16px;">👨‍💼</div>';
         }
-        subsHtml += '<div><div style="font-weight: bold; font-size: 16px;">' + Common.esc(A.coach?.name || A.coachName || 'N/A') + '</div><div style="color: #ccc; font-size: 12px;">Entraîneur</div></div>';
+        subsHtml += '<div><div style="font-weight: bold; font-size: 16px;">' + Common.esc(getFirstName(A.coach?.name || A.coachName || 'N/A')) + '</div><div style="color: #ccc; font-size: 12px;">Entraîneur</div></div>';
         subsHtml += '</div>';
         subsHtml += '</div>';
         
@@ -1422,15 +1335,19 @@
               ratingBadgeHtml = '<span style="background: ' + badgeColor + '; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">' + playerRating + badgeIcon + '</span>';
             }
             
-            // Create substitution info
+            // Create substitution info - DEBUG: Always show if we have data
             var substitutionInfo = '';
             var subInTime = sub.player?.subIn || '';
             var subOutTime = sub.player?.subOut || '';
-            if (playerSubstitute && subInTime) {
+            
+            // Debug: Show what we have
+            console.log('Player:', playerName, 'subIn:', subInTime, 'subOut:', subOutTime, 'substitute:', playerSubstitute);
+            
+            if (subInTime) {
               var timeRemaining = 90 - parseInt(subInTime);
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
-            } else if (!playerSubstitute && subOutTime) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
+              substitutionInfo = '<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">IN ' + subInTime + "'</span>";
+            } else if (subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">OUT ' + subOutTime + "'</span>";
             }
             
             // Create performance stats with icons like in composition
@@ -1451,11 +1368,17 @@
               if (playerCards.red > 0) cardsInfo += '<span style="color: #dc3545; font-size: 12px; margin-left: 8px;">🟥 ' + playerCards.red + '</span>';
             }
             
-            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + Common.esc(playerName) + ratingBadgeHtml + substitutionInfo + performanceStats + cardsInfo + '</div>';
-            var detailsText = playerNumber + ' • ' + Common.esc(playerPosition);
-            if (playerMinutes) detailsText += ' • ' + playerMinutes + ' min';
-            if (playerCaptain) detailsText += ' • Captain';
-            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + detailsText + '</div>';
+            // Player name with number
+            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + playerNumber + ' ' + Common.esc(getFirstName(playerName)) + '</div>';
+            
+            // Player position
+            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + Common.esc(playerPosition) + '</div>';
+            
+            // Badges positioned on image
+            subsHtml += '<div class="substitution-time">' + substitutionInfo + '</div>';
+            subsHtml += '<div class="rating-badge">' + ratingBadgeHtml + '</div>';
+            subsHtml += '<div class="performance-stats">' + performanceStats + '</div>';
+            subsHtml += '<div class="cards-info">' + cardsInfo + '</div>';
             subsHtml += '</div>';
             // Note: Flag display removed as it's not available in the players API data structure
             subsHtml += '</div>';
@@ -1507,15 +1430,19 @@
               ratingBadgeHtml = '<span style="background: ' + badgeColor + '; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">' + playerRating + badgeIcon + '</span>';
             }
             
-            // Create substitution info
+            // Create substitution info - DEBUG: Always show if we have data
             var substitutionInfo = '';
             var subInTime = sub.player?.subIn || '';
             var subOutTime = sub.player?.subOut || '';
-            if (playerSubstitute && subInTime) {
+            
+            // Debug: Show what we have
+            console.log('Player:', playerName, 'subIn:', subInTime, 'subOut:', subOutTime, 'substitute:', playerSubstitute);
+            
+            if (subInTime) {
               var timeRemaining = 90 - parseInt(subInTime);
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
-            } else if (!playerSubstitute && subOutTime) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
+              substitutionInfo = '<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">IN ' + subInTime + "'</span>";
+            } else if (subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">OUT ' + subOutTime + "'</span>";
             }
             
             // Create performance stats with icons like in composition
@@ -1536,11 +1463,17 @@
               if (playerCards.red > 0) cardsInfo += '<span style="color: #dc3545; font-size: 12px; margin-left: 8px;">🟥 ' + playerCards.red + '</span>';
             }
             
-            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + Common.esc(playerName) + ratingBadgeHtml + substitutionInfo + performanceStats + cardsInfo + '</div>';
-            var detailsText = playerNumber + ' • ' + Common.esc(playerPosition);
-            if (playerMinutes) detailsText += ' • ' + playerMinutes + ' min';
-            if (playerCaptain) detailsText += ' • Captain';
-            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + detailsText + '</div>';
+            // Player name with number
+            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + playerNumber + ' ' + Common.esc(getFirstName(playerName)) + '</div>';
+            
+            // Player position
+            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + Common.esc(playerPosition) + '</div>';
+            
+            // Badges positioned on image
+            subsHtml += '<div class="substitution-time">' + substitutionInfo + '</div>';
+            subsHtml += '<div class="rating-badge">' + ratingBadgeHtml + '</div>';
+            subsHtml += '<div class="performance-stats">' + performanceStats + '</div>';
+            subsHtml += '<div class="cards-info">' + cardsInfo + '</div>';
             subsHtml += '</div>';
             // Note: Flag display removed as it's not available in the players API data structure
             subsHtml += '</div>';
@@ -1598,15 +1531,19 @@
               ratingBadgeHtml = '<span style="background: ' + badgeColor + '; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">' + playerRating + badgeIcon + '</span>';
             }
             
-            // Create substitution info
+            // Create substitution info - DEBUG: Always show if we have data
             var substitutionInfo = '';
             var subInTime = sub.player?.subIn || '';
             var subOutTime = sub.player?.subOut || '';
-            if (playerSubstitute && subInTime) {
+            
+            // Debug: Show what we have
+            console.log('Player:', playerName, 'subIn:', subInTime, 'subOut:', subOutTime, 'substitute:', playerSubstitute);
+            
+            if (subInTime) {
               var timeRemaining = 90 - parseInt(subInTime);
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
-            } else if (!playerSubstitute && subOutTime) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
+              substitutionInfo = '<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">IN ' + subInTime + "'</span>";
+            } else if (subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">OUT ' + subOutTime + "'</span>";
             }
             
             // Create performance stats with icons like in composition
@@ -1627,11 +1564,17 @@
               if (playerCards.red > 0) cardsInfo += '<span style="color: #dc3545; font-size: 12px; margin-left: 8px;">🟥 ' + playerCards.red + '</span>';
             }
             
-            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + Common.esc(playerName) + ratingBadgeHtml + substitutionInfo + performanceStats + cardsInfo + '</div>';
-            var detailsText = playerNumber + ' • ' + Common.esc(playerPosition);
-            if (playerMinutes) detailsText += ' • ' + playerMinutes + ' min';
-            if (playerCaptain) detailsText += ' • Captain';
-            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + detailsText + '</div>';
+            // Player name with number
+            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + playerNumber + ' ' + Common.esc(getFirstName(playerName)) + '</div>';
+            
+            // Player position
+            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + Common.esc(playerPosition) + '</div>';
+            
+            // Badges positioned on image
+            subsHtml += '<div class="substitution-time">' + substitutionInfo + '</div>';
+            subsHtml += '<div class="rating-badge">' + ratingBadgeHtml + '</div>';
+            subsHtml += '<div class="performance-stats">' + performanceStats + '</div>';
+            subsHtml += '<div class="cards-info">' + cardsInfo + '</div>';
             subsHtml += '</div>';
             // Note: Flag display removed as it's not available in the players API data structure
             subsHtml += '</div>';
@@ -1683,15 +1626,19 @@
               ratingBadgeHtml = '<span style="background: ' + badgeColor + '; color: white; padding: 2px 6px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-left: 8px;">' + playerRating + badgeIcon + '</span>';
             }
             
-            // Create substitution info
+            // Create substitution info - DEBUG: Always show if we have data
             var substitutionInfo = '';
             var subInTime = sub.player?.subIn || '';
             var subOutTime = sub.player?.subOut || '';
-            if (playerSubstitute && subInTime) {
+            
+            // Debug: Show what we have
+            console.log('Player:', playerName, 'subIn:', subInTime, 'subOut:', subOutTime, 'substitute:', playerSubstitute);
+            
+            if (subInTime) {
               var timeRemaining = 90 - parseInt(subInTime);
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">IN ' + subInTime + "' (" + timeRemaining + "')</span>";
-            } else if (!playerSubstitute && subOutTime) {
-              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px; margin-left: 8px;">OUT ' + subOutTime + "'</span>";
+              substitutionInfo = '<span style="background: #28a745; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">IN ' + subInTime + "'</span>";
+            } else if (subOutTime) {
+              substitutionInfo = '<span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">OUT ' + subOutTime + "'</span>";
             }
             
             // Create performance stats with icons like in composition
@@ -1712,11 +1659,17 @@
               if (playerCards.red > 0) cardsInfo += '<span style="color: #dc3545; font-size: 12px; margin-left: 8px;">🟥 ' + playerCards.red + '</span>';
             }
             
-            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + Common.esc(playerName) + ratingBadgeHtml + substitutionInfo + performanceStats + cardsInfo + '</div>';
-            var detailsText = playerNumber + ' • ' + Common.esc(playerPosition);
-            if (playerMinutes) detailsText += ' • ' + playerMinutes + ' min';
-            if (playerCaptain) detailsText += ' • Captain';
-            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + detailsText + '</div>';
+            // Player name with number
+            subsHtml += '<div style="color: #fff; font-weight: bold; font-size: 16px;">' + playerNumber + ' ' + Common.esc(getFirstName(playerName)) + '</div>';
+            
+            // Player position
+            subsHtml += '<div style="color: #ccc; font-size: 14px;">' + Common.esc(playerPosition) + '</div>';
+            
+            // Badges positioned on image
+            subsHtml += '<div class="substitution-time">' + substitutionInfo + '</div>';
+            subsHtml += '<div class="rating-badge">' + ratingBadgeHtml + '</div>';
+            subsHtml += '<div class="performance-stats">' + performanceStats + '</div>';
+            subsHtml += '<div class="cards-info">' + cardsInfo + '</div>';
             subsHtml += '</div>';
             // Note: Flag display removed as it's not available in the players API data structure
             subsHtml += '</div>';
@@ -1729,6 +1682,171 @@
         
         if (subsHtml) {
           subsContainer.innerHTML = subsHtml;
+        
+        // Add mobile-only CSS overrides
+        if (!window.cslfMobileCSSAdded) {
+          var style = document.createElement('style');
+          style.id = 'cslf-mobile-substitutes';
+          style.textContent = `
+            /* Mobile styles ONLY - Desktop stays original */
+            @media (max-width: 480px) {
+              /* Override main container for mobile */
+              #subs-${inst.id} > div {
+                background: #1a1a1a !important;
+                color: white !important;
+                padding: 15px !important;
+                margin-top: 20px !important;
+                border-radius: 8px !important;
+              }
+              
+              /* Override coaches section for mobile */
+              #subs-${inst.id} .coaches-section,
+              #subs-${inst.id} > div > div:first-child {
+                display: flex !important;
+                justify-content: space-around !important;
+                margin-bottom: 30px !important;
+                padding: 0 !important;
+                background: transparent !important;
+              }
+              
+              /* Override coach items for mobile */
+              #subs-${inst.id} .coaches-section > div,
+              #subs-${inst.id} > div > div:first-child > div {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+                gap: 8px !important;
+              }
+              
+              /* Override coach images for mobile */
+              #subs-${inst.id} .coaches-section img,
+              #subs-${inst.id} > div > div:first-child img {
+                width: 60px !important;
+                height: 60px !important;
+                border-radius: 50% !important;
+                object-fit: cover !important;
+                margin-bottom: 8px !important;
+              }
+              
+              /* Override coach names for mobile */
+              #subs-${inst.id} .coaches-section div div:first-child,
+              #subs-${inst.id} > div > div:first-child > div > div:first-child {
+                font-size: 14px !important;
+                font-weight: bold !important;
+                color: white !important;
+              }
+              
+              /* Override player entries for mobile - vertical layout */
+              #subs-${inst.id} .player-entry {
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+                gap: 8px !important;
+                margin-bottom: 15px !important;
+                padding: 12px !important;
+                background: rgba(255,255,255,0.1) !important;
+                border-radius: 8px !important;
+                cursor: pointer !important;
+                transition: background-color 0.2s ease !important;
+                position: relative !important;
+              }
+              
+              /* Override player images for mobile */
+              #subs-${inst.id} .player-entry img,
+              #subs-${inst.id} .player-entry > div:first-child {
+                width: 50px !important;
+                height: 50px !important;
+                border-radius: 50% !important;
+                object-fit: cover !important;
+                margin-bottom: 8px !important;
+                position: relative !important;
+              }
+              
+              /* Override player info for mobile */
+              #subs-${inst.id} .player-entry > div:last-child {
+                width: 100% !important;
+                text-align: center !important;
+              }
+              
+              /* Rating badge - TOP RIGHT of image */
+              #subs-${inst.id} .player-entry .rating-badge {
+                position: absolute !important;
+                top: 5px !important;
+                right: 5px !important;
+                z-index: 10 !important;
+              }
+              #subs-${inst.id} .player-entry .rating-badge span {
+                font-size: 10px !important;
+                padding: 1px 4px !important;
+                border-radius: 8px !important;
+              }
+              
+              /* Substitution time - TOP LEFT of image */
+              #subs-${inst.id} .player-entry .substitution-time {
+                position: absolute !important;
+                top: 5px !important;
+                left: 5px !important;
+                z-index: 10 !important;
+              }
+              #subs-${inst.id} .player-entry .substitution-time span {
+                font-size: 9px !important;
+                padding: 1px 3px !important;
+                border-radius: 6px !important;
+              }
+              
+              /* Cards - BELOW minutes, TOP LEFT - SMALL RECTANGLES (no circle) */
+              #subs-${inst.id} .player-entry .cards-info {
+                position: absolute !important;
+                top: 20px !important;
+                left: 5px !important;
+                z-index: 10 !important;
+              }
+              #subs-${inst.id} .player-entry .cards-info span {
+                font-size: 0 !important;
+                padding: 0 !important;
+                border-radius: 0 !important;
+                width: 8px !important;
+                height: 12px !important;
+                display: inline-block !important;
+                margin-right: 2px !important;
+              }
+              
+              /* Yellow card styling - NO CIRCLE, SQUARE */
+              #subs-${inst.id} .player-entry .cards-info span[style*="color: #ffc107"] {
+                background-color: #ffc107 !important;
+                border: 1px solid #ffc107 !important;
+                border-radius: 0 !important;
+              }
+              
+              /* Red card styling - NO CIRCLE, SQUARE */
+              #subs-${inst.id} .player-entry .cards-info span[style*="color: #dc3545"] {
+                background-color: #dc3545 !important;
+                border: 1px solid #dc3545 !important;
+                border-radius: 0 !important;
+              }
+              
+              /* Player name and number - UNDER the image */
+              #subs-${inst.id} .player-entry > div:last-child > div:first-child {
+                margin: 0 !important;
+                font-weight: bold !important;
+                font-size: 14px !important;
+                color: #fff !important;
+                margin-bottom: 4px !important;
+              }
+              
+              /* Player position - BELOW the name */
+              #subs-${inst.id} .player-entry > div:last-child > div:last-child {
+                margin: 0 !important;
+                font-size: 12px !important;
+                color: #ccc !important;
+              }
+            }
+          `;
+          document.head.appendChild(style);
+          window.cslfMobileCSSAdded = true;
+        }
           
           // Add click handlers for changements players
           var changementsPlayers = subsContainer.querySelectorAll('.changements-section .player-entry');

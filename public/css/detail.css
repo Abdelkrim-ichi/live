@@ -107,6 +107,76 @@
   line-height: 1.4;
 }
 
+/* Team header responsive styles */
+.cslf-team-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+}
+
+.cslf-team-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.cslf-team-info.away {
+  flex-direction: row-reverse;
+}
+
+.cslf-team-badge {
+  background: #1d4ed8;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: center;
+}
+
+.cslf-team-badge.rating {
+  background: #22c55e;
+}
+
+.cslf-team-badge.away-rating {
+  background: #f59e0b;
+}
+
+.cslf-team-logo-header {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  border-radius: 50%;
+  background: #111827;
+  padding: 4px;
+}
+
+.cslf-team-name-header {
+  font-size: 16px;
+  font-weight: 700;
+  color: #e0e0e0;
+  min-width: 0;
+  flex: 1;
+}
+
+.cslf-formation-badge {
+  background: #3b82f6;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
 /* Responsive design for mobile */
 @media (max-width: 768px) {
   .cslf-tabs {
@@ -140,12 +210,50 @@
   
   .cslf-match-info {
     justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .cslf-match-info .chip {
+    font-size: 11px;
+    padding: 4px 8px;
   }
   
   .cslf-last-update {
     margin-left: 0;
     text-align: center;
   }
+  
+  .cslf-match-header {
+    padding: 16px;
+  }
+  
+  .cslf-team-header {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 16px;
+  }
+  
+  .cslf-team-info {
+    gap: 8px;
+  }
+  
+  .cslf-team-logo-header {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .cslf-team-name-header {
+    font-size: 14px;
+  }
+  
+  .cslf-team-badge,
+  .cslf-formation-badge {
+    font-size: 11px;
+    padding: 3px 6px;
+    min-width: 35px;
+  }
+  
 }
 
 /* Extra small screens */
@@ -176,6 +284,53 @@
   .cslf-match-time {
     font-size: 14px;
   }
+  
+  .cslf-match-header {
+    padding: 12px;
+  }
+  
+  .cslf-match-info {
+    gap: 6px;
+  }
+  
+  .cslf-match-info .chip {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+  
+  .cslf-scoreboard {
+    gap: 12px;
+  }
+  
+  .cslf-team {
+    gap: 8px;
+  }
+  
+  .cslf-team-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  
+  .cslf-team-info {
+    gap: 6px;
+  }
+  
+  .cslf-team-logo-header {
+    width: 28px;
+    height: 28px;
+  }
+  
+  .cslf-team-name-header {
+    font-size: 13px;
+  }
+  
+  .cslf-team-badge,
+  .cslf-formation-badge {
+    font-size: 10px;
+    padding: 2px 4px;
+    min-width: 30px;
+  }
+  
 }
 
 /* Large screens */
@@ -188,6 +343,30 @@
   .cslf-tabs button {
     padding: 14px 8px;
     font-size: 15px;
+  }
+  
+  .cslf-team-header {
+    padding: 20px 24px;
+  }
+  
+  .cslf-team-info {
+    gap: 16px;
+  }
+  
+  .cslf-team-logo-header {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .cslf-team-name-header {
+    font-size: 18px;
+  }
+  
+  .cslf-team-badge,
+  .cslf-formation-badge {
+    font-size: 13px;
+    padding: 5px 10px;
+    min-width: 55px;
   }
 }
 
