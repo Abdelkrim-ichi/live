@@ -1,0 +1,34 @@
+/* === CSLF Composition (Pitch & Players) ================================ */
+.cslf-pitch{
+    position: relative;
+    width: 100%;
+    aspect-ratio: 105 / 68;
+    background: radial-gradient(ellipse at center, #155e30 0%, #0e4421 65%, #0a351a 100%);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 18px rgba(0,0,0,.35) inset;
+}
+.cslf-pitch .line,
+.cslf-pitch .circle,
+.cslf-pitch .goal-area{ position:absolute; z-index:1; pointer-events:none; }
+.cslf-pitch .center-line{ left:50%; top:0; width:2px; height:100%; background:rgba(255,255,255,.7); transform:translateX(-50%); }
+.cslf-pitch .circle{ left:50%; top:50%; width:26%; height:26%; border:2px solid rgba(255,255,255,.7); border-radius:50%; transform:translate(-50%,-50%); }
+.cslf-pitch .goal-area{ top:25%; width:6%; height:50%; border:2px solid rgba(255,255,255,.6); border-left:none; background:transparent; }
+.cslf-pitch .goal-left{ left:0; border-right:none; border-left:2px solid rgba(255,255,255,.6); }
+.cslf-pitch .goal-right{ right:0; }
+.cslf-pitch .player{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none; z-index:3; }
+.cslf-pitch.is-rotated{ will-change: transform; }
+
+/* Mini pitch (if you use it somewhere else) */
+.cslf-pitch-mini{ position:relative; height:260px; background:linear-gradient(#0b3d28,#0a3221); border:2px solid #0a472e; border-radius:12px; overflow:hidden; }
+.player-mini{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none; }
+.dot-mini{ width:22px; height:22px; border-radius:50%; background:#ffd166; border:2px solid #111827; display:flex; align-items:center; justify-content:center; font-weight:800; color:#111; }
+.pname-mini{ font-size:9px; margin-top:2px; max-width:80px; text-align:center; color:#e5e7eb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* mobile helpers */
+@media (max-width: 767px){
+.cslf-card{ overflow: visible; }
+/* option: reserve height if your theme collapses the parent
+    #<PITCH_ID> { min-height: 85vw; } */
+}
+  

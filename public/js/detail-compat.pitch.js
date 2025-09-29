@@ -1,18 +1,15 @@
 (function(w, d){
   "use strict";
-  // ==========start composition  (stadium) ====
-  // NOTE: Do not change any IDs/classes used by the DOM; this file only organizes code.
   w.CSLF = w.CSLF || {};
   w.CSLF.DetailCompat = w.CSLF.DetailCompat || {};
   var Common = w.CSLF.DetailCommon;
   if(!Common){ return; }
 
-  // -------- helpers --------
+  // ---------- helpers ----------
   function parseGrid(grid){
     var m = String(grid||"").match(/^(\d+):(\d+)$/);
     return m ? {row:+m[1], col:+m[2]} : {row:1, col:1};
   }
-
   function laneBandForCount(n, padY){
     var W = 100 - 2*padY, f = 1.0;
     if (n===1) f = 0.00;
@@ -22,26 +19,21 @@
     var end   = 100 - padY - (W*(1-f)/2);
     return {start:start, end:end};
   }
-
   function computeCoordsFromGrid(lineup, side){
     var XI = (lineup.startXI||[]).map(function(x){
       var p = x.player || x;
       var g = parseGrid(p.grid);
-      return { id: p.id, name: p.name, number: p.number,
-        pos: (p.pos||"").toUpperCase(), row: g.row, col: g.col };
+      return { id:p.id, name:p.name, number:p.number, pos:(p.pos||"").toUpperCase(), row:g.row, col:g.col };
     });
     if (!XI.length) return [];
-
-    var teamMinCol = Math.min.apply(Math, XI.map(function(p){ return p.col; }));
-    var teamMaxCol = Math.max.apply(Math, XI.map(function(p){ return p.col; }));
-    var rows = Array.from(new Set(XI.map(function(p){ return p.row; }))).sort(function(a,b){ return a-b; });
-    var byRow = new Map(rows.map(function(r){
-      return [r, XI.filter(function(p){ return p.row===r; }).sort(function(a,b){ return a.col-b.col; })];
-    }));
+    var teamMinCol = Math.min.apply(Math, XI.map(p=>p.col));
+    var teamMaxCol = Math.max.apply(Math, XI.map(p=>p.col));
+    var rows = Array.from(new Set(XI.map(p=>p.row))).sort((a,b)=>a-b);
+    var byRow = new Map(rows.map(r=>[r, XI.filter(p=>p.row===r).sort((a,b)=>a.col-b.col)]));
 
     var padX=6, padY=10, inner=8;
     var xLeftMin=padX, xLeftMax=50-inner, xRightMin=50+inner, xRightMax=100-padX;
-    var lerp=function(a,b,t){ return a+(b-a)*t; };
+    var lerp=(a,b,t)=>a+(b-a)*t;
     var rowMin=rows[0], rowMax=rows[rows.length-1];
 
     var coords=[];
@@ -70,33 +62,44 @@
     return coords;
   }
 
-  // -------- mobile rotation control --------
+  // ---------- mobile rotation ----------
   function isMobile(){ return w.innerWidth < 768; }
 
-  // Find the outer "stadium frame" (green rounded card) to rotate on mobile
-  function getFieldFrameEl(pitch){
-    var guess = pitch.closest('.cslf-stadium, .stadium, .pitch-frame, .pitch-wrap, .pitch-container');
-    return guess || pitch;
-  }
-
+  // Rotate the pitch and scale to fit its parent after width/height swap
   function applyFrameRotation(pitch){
-    var frame = getFieldFrameEl(pitch);
+    if (!pitch) return;
+    var parent = pitch.parentElement || pitch;
+
     if (isMobile()){
-      frame.style.transformOrigin = '50% 50%';
-      frame.style.transform = 'rotate(90deg)';
-      var cs = w.getComputedStyle(frame);
-      if ((cs.position||'') === 'static') frame.style.position = 'relative';
+      var pw = parent.clientWidth || parent.offsetWidth || 0;
+      var ph = parent.clientHeight || parent.offsetHeight || 0;
+      if (!ph){
+        ph = Math.min(w.innerHeight * 0.85, w.innerWidth * 1.1);
+        parent.style.minHeight = ph + "px";
+      }
+      var rect = pitch.getBoundingClientRect();
+      var w0 = rect.width  || pitch.offsetWidth  || 1;
+      var h0 = rect.height || pitch.offsetHeight || 1;
+
+      // After rotate(90deg): width' = h0, height' = w0
+      var sx = pw / h0;
+      var sy = ph / w0;
+      var s  = Math.min(sx, sy, 1); // avoid over-zoom
+
+      pitch.style.transformOrigin = '50% 50%';
+      pitch.style.transform = 'rotate(90deg) scale('+ s +')';
+      pitch.classList.add('is-rotated');
     } else {
-      frame.style.transform = 'none';
+      pitch.style.transformOrigin = '';
+      pitch.style.transform = 'none';
+      pitch.classList.remove('is-rotated');
     }
   }
 
+  // Keep players upright on mobile
   function applyPlayersCounterRotation(pitch){
-    // Ensure players stay upright (counter-rotate) or normal on desktop
     var rotatePlayer = isMobile();
-    var els = pitch.querySelectorAll('.player');
-    els.forEach(function(el){
-      // keep the translate; toggle rotate part only
+    pitch.querySelectorAll('.player').forEach(function(el){
       el.style.transform = rotatePlayer
         ? 'translate(-50%, -50%) rotate(-90deg)'
         : 'translate(-50%, -50%)';
@@ -107,13 +110,10 @@
     if (pitch.__cslfResizeBound) return;
     pitch.__cslfResizeBound = true;
     pitch.__cslfWasMobile = isMobile();
-
     w.addEventListener('resize', function(){
-      var nowMobile = isMobile();
       applyFrameRotation(pitch);
       applyPlayersCounterRotation(pitch);
-
-      // If we crossed the mobile/desktop threshold, force a full re-render
+      var nowMobile = isMobile();
       if (nowMobile !== pitch.__cslfWasMobile){
         pitch.__cslfWasMobile = nowMobile;
         if (w.CSLF && w.CSLF.DetailCompat && typeof w.CSLF.DetailCompat.renderFormation === 'function'){
@@ -123,7 +123,7 @@
     });
   }
 
-  // -------- rendering --------
+  // ---------- rendering ----------
   function addPlayerAtPosition(pitch, player, isHome, x, y, idx, isMVP, inst){
     if (!pitch || !player) return;
     var playerData = player.player || player;
@@ -142,12 +142,13 @@
     el.style.left = x+'%';
     el.style.top  = y+'%';
     el.style.position='absolute';
-    // transform will be finalized by applyPlayersCounterRotation (to handle resize)
     el.style.transform='translate(-50%, -50%)';
     el.style.display='flex';
     el.style.flexDirection='column';
     el.style.alignItems='center';
     el.style.cursor='pointer';
+    el.style.pointerEvents='auto';
+    el.style.zIndex='3';
 
     var wrap = d.createElement('div');
     wrap.style.position='relative';
@@ -158,7 +159,7 @@
     badge.style.background='#ffd166';
     badge.style.border='2px solid #111827';
     badge.style.position='relative';
-    badge.style.overflow='visible'; // allow rating chip to peek outside
+    badge.style.overflow='visible';
 
     if (playerPhoto){
       var img=new Image(); img.src=playerPhoto; img.alt=playerName||'';
@@ -171,41 +172,38 @@
     if (playerRating!=null){
       var chip=d.createElement('div');
       var ratingNum=parseFloat(playerRating||0);
-      chip.textContent = (isFinite(ratingNum)?ratingNum.toFixed(1):playerRating);
+      chip.textContent = (isFinite(ratingNum)?ratingNum.toFixed(1):playerRating) + (isMVP ? ' ⭐' : '');
+      chip.title = isMVP ? 'Joueur du match' : 'Note';
       chip.style.fontSize='10px'; chip.style.padding='2px 6px';
       chip.style.borderRadius='10px'; chip.style.color='#fff'; chip.style.fontWeight='800';
       chip.style.position='absolute'; chip.style.top='0'; chip.style.right='0';
       chip.style.transform='translate(35%,-35%)';
-      if (ratingNum<5) chip.style.background='#dc3545';
-      else if (ratingNum<7) chip.style.background='#fd7e14';
+      if (ratingNum<5)        chip.style.background='#dc3545';
+      else if (ratingNum<7)   chip.style.background='#fd7e14';
       else if (ratingNum<8.5) chip.style.background='#28a745';
-      else chip.style.background='#007bff';
+      else                    chip.style.background='#007bff';
       badge.appendChild(chip);
     }
 
-    // cards (top-left)
+    // cards
     if ((playerCards.yellow||0)>0 || (playerCards.red||0)>0){
       var tagsTL=d.createElement('div');
       tagsTL.style.position='absolute'; tagsTL.style.display='flex'; tagsTL.style.gap='3px';
       tagsTL.style.top='-6px'; tagsTL.style.left='-6px'; tagsTL.style.flexDirection='column'; tagsTL.style.alignItems='flex-start';
-      if ((playerCards.yellow||0)>0){
-        for(var i=0;i<playerCards.yellow;i++){
-          var y1=d.createElement('div');
-          y1.style.width='12px'; y1.style.height='16px'; y1.style.border='1px solid #111827';
-          y1.style.borderRadius='2px'; y1.style.background='#facc15'; tagsTL.appendChild(y1);
-        }
+      for(var i=0;i<(playerCards.yellow||0);i++){
+        var y1=d.createElement('div');
+        y1.style.width='12px'; y1.style.height='16px'; y1.style.border='1px solid #111827';
+        y1.style.borderRadius='2px'; y1.style.background='#facc15'; tagsTL.appendChild(y1);
       }
-      if ((playerCards.red||0)>0){
-        for(var r=0;r<playerCards.red;r++){
-          var r1=d.createElement('div');
-          r1.style.width='12px'; r1.style.height='16px'; r1.style.border='1px solid #111827';
-          r1.style.borderRadius='2px'; r1.style.background='#ef4444'; tagsTL.appendChild(r1);
-        }
+      for(var r=0;r<(playerCards.red||0);r++){
+        var r1=d.createElement('div');
+        r1.style.width='12px'; r1.style.height='16px'; r1.style.border='1px solid #111827';
+        r1.style.borderRadius='2px'; r1.style.background='#ef4444'; tagsTL.appendChild(r1);
       }
       badge.appendChild(tagsTL);
     }
 
-    // goals/assists (bottom corners)
+    // goals & assists
     if ((playerGoals.total||0)>0){
       var g=d.createElement('div');
       g.textContent='⚽'+(playerGoals.total>1?'×'+playerGoals.total:'');
@@ -227,7 +225,6 @@
 
     wrap.appendChild(badge);
 
-    // name under avatar — slightly smaller
     var name = d.createElement('div');
     name.style.fontSize='11px'; name.style.marginTop='4px';
     name.style.maxWidth='160px'; name.style.textAlign='center';
@@ -239,7 +236,6 @@
 
     el.appendChild(wrap); el.appendChild(name);
 
-    // click -> modal
     el.addEventListener('click', function(e){
       e.preventDefault(); e.stopPropagation();
       var detailed = w.CSLF.DetailCompat.utils.findDetailedPlayerDataCompat(playerData);
@@ -250,30 +246,25 @@
   }
 
   function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer, inst){
-    // 1) Rotate the outer frame (green card) for current viewport
     applyFrameRotation(pitch);
-
-    // 2) Compute normal (desktop) coords — DO NOT rotate coords
     var lineup={ startXI: players };
     var coords=computeCoordsFromGrid(lineup, isHome ? 'home':'away');
 
-    // 3) Render players
     coords.forEach(function(coord, idx){
       if (idx<players.length){
-        var isMVP=(players[idx]===bestPlayer);
+        var pid = (players[idx].player ? players[idx].player.id : players[idx].id);
+        var bestId = bestPlayer ? (bestPlayer.player ? bestPlayer.player.id : bestPlayer.id) : null;
+        var isMVP = !!(bestId && pid === bestId);
         addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, inst);
       }
     });
 
-    // 4) Ensure players are counter-rotated for current viewport & keep in sync on resize
     applyPlayersCounterRotation(pitch);
     bindResizeSync(pitch);
   }
 
-  // Expose
   w.CSLF.DetailCompat.pitch = {
     parseGrid, laneBandForCount, computeCoordsFromGrid,
     positionPlayersByFormation, addPlayerAtPosition
   };
-  // ============end composition ==========
 })(window, document);

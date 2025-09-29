@@ -16,14 +16,57 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
     wp_enqueue_script('jquery');
     wp_enqueue_style('cslf-detail-css');
     wp_enqueue_script('cslf-tabs-js', CSLF_URL . 'public/js/tabs.js', ['jquery'], CSLF_VERSION, true);
-    wp_enqueue_style('cslf-detail-css', CSLF_URL . 'public/css/detail.css', [], CSLF_VERSION);
+    // wp_enqueue_style('cslf-detail-css', CSLF_URL . 'public/css/detail.css', [], CSLF_VERSION);
+    wp_enqueue_style('cslf-detail', CSLF_URL . 'public/css/cslf-detail.css', [], CSLF_VERSION);
+    wp_enqueue_style('cslf-composition', CSLF_URL . 'public/css/cslf-composition.css', [], CSLF_VERSION);
+    
 
 
     $id = uniqid('cslf_det_');
 
     // Split modules (order matters via dependencies)
     wp_enqueue_script('cslf-detail-common',     CSLF_URL . 'public/js/detail-common.js', ['jquery'],            CSLF_VERSION, true);
-    wp_enqueue_script('cslf-detail-compat', CSLF_URL . 'public/js/detail-compat.js', ['cslf-detail-common'], CSLF_VERSION, true);
+    // wp_enqueue_script('cslf-detail-compat', CSLF_URL . 'public/js/detail-compat.js', ['cslf-detail-common'], CSLF_VERSION, true);
+    // ==== detail-compat split scripts ====
+    wp_enqueue_script(
+      'cslf-detail-utils',
+      CSLF_URL . 'public/js/detail-compat.utils.js',
+      ['cslf-detail-core'], // depends on your main core base
+      CSLF_VERSION,
+      true
+    );
+
+    wp_enqueue_script(
+      'cslf-detail-header',
+      CSLF_URL . 'public/js/detail-compat.header.js',
+      ['cslf-detail-utils'],
+      CSLF_VERSION,
+      true
+    );
+
+    wp_enqueue_script(
+      'cslf-detail-pitch',
+      CSLF_URL . 'public/js/detail-compat.pitch.js',
+      ['cslf-detail-header'],
+      CSLF_VERSION,
+      true
+    );
+
+    wp_enqueue_script(
+      'cslf-detail-coach-subs',
+      CSLF_URL . 'public/js/detail-compat.coach-subs.js',
+      ['cslf-detail-pitch'],
+      CSLF_VERSION,
+      true
+    );
+
+    wp_enqueue_script(
+      'cslf-detail-compat-core',
+      CSLF_URL . 'public/js/detail-compat.core.js',
+      ['cslf-detail-coach-subs'],
+      CSLF_VERSION,
+      true
+    );
     wp_enqueue_script('cslf-detail-core',       CSLF_URL . 'public/js/detail-core.js',   ['cslf-detail-common'],CSLF_VERSION, true);
     wp_enqueue_script('cslf-detail-resume',     CSLF_URL . 'public/js/detail-resume.js', ['cslf-detail-core'],  CSLF_VERSION, true);
     wp_enqueue_script('cslf-detail-stats',      CSLF_URL . 'public/js/detail-stats.js',  ['cslf-detail-core'],  CSLF_VERSION, true);
@@ -71,11 +114,13 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
               <img class="cslf-team-logo" id="awayLogo-<?php echo esc_attr($id); ?>" src="" alt="">
               <div class="cslf-team-name" id="awayName-<?php echo esc_attr($id); ?>">—</div>
             </div>
+
+            <div class="cslf-scorers">
+              <div class="cslf-scorers-home" id="scorersHome-<?php echo esc_attr($id); ?>"></div>
+              <div class="cslf-scorers-away" id="scorersAway-<?php echo esc_attr($id); ?>"></div>
+            </div>
           </div>
-          
-          <div class="cslf-location-info" id="locationInfo-<?php echo esc_attr($id); ?>">
-            <!-- Location info will be populated here -->
-          </div>
+
         </div>
 
         <div class="cslf-tabs">
