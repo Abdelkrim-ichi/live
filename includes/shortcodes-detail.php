@@ -169,7 +169,10 @@ if (!function_exists('cslf_live_foot_detail_shortcode')) {
               <div id="<?php echo $id; ?>-awayHead"></div>
             </div>
             <div id="<?php echo $id; ?>-forms" class="muted" style="margin-bottom:8px"></div>
-            <div class="cslf-pitch" id="<?php echo $id; ?>-pitch"><div class="line center-line"></div><div class="circle"></div><div class="goal-area goal-left"></div><div class="goal-area goal-right"></div></div>
+            <div class="cslf-pitch" id="<?php echo $id; ?>-pitch"><div class="line center-line"></div><div class="circle"></div><div class="goal-area goal-left"></div><div class="goal-area goal-right"></div>
+            <div class="goal-mouth mouth-left"></div>
+  <div class="goal-mouth mouth-right"></div>
+          </div>
           </div>
         </div>
 

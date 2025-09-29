@@ -1,34 +1,89 @@
-/* === CSLF Composition (Pitch & Players) ================================ */
-.cslf-pitch{
-    position: relative;
-    width: 100%;
-    aspect-ratio: 105 / 68;
-    background: radial-gradient(ellipse at center, #155e30 0%, #0e4421 65%, #0a351a 100%);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 18px rgba(0,0,0,.35) inset;
-}
-.cslf-pitch .line,
-.cslf-pitch .circle,
-.cslf-pitch .goal-area{ position:absolute; z-index:1; pointer-events:none; }
-.cslf-pitch .center-line{ left:50%; top:0; width:2px; height:100%; background:rgba(255,255,255,.7); transform:translateX(-50%); }
-.cslf-pitch .circle{ left:50%; top:50%; width:26%; height:26%; border:2px solid rgba(255,255,255,.7); border-radius:50%; transform:translate(-50%,-50%); }
-.cslf-pitch .goal-area{ top:25%; width:6%; height:50%; border:2px solid rgba(255,255,255,.6); border-left:none; background:transparent; }
-.cslf-pitch .goal-left{ left:0; border-right:none; border-left:2px solid rgba(255,255,255,.6); }
-.cslf-pitch .goal-right{ right:0; }
-.cslf-pitch .player{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none; z-index:3; }
-.cslf-pitch.is-rotated{ will-change: transform; }
+/* ==== COMPOSITION / LINE-UPS (scopé sur l'onglet) ==== */
+.cslf-pane[data-pane="compos"] .cslf-teams-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cslf-pane[data-pane="compos"] .cslf-teams-head img{width:22px;height:22px;object-fit:contain}
 
-/* Mini pitch (if you use it somewhere else) */
-.cslf-pitch-mini{ position:relative; height:260px; background:linear-gradient(#0b3d28,#0a3221); border:2px solid #0a472e; border-radius:12px; overflow:hidden; }
-.player-mini{ position:absolute; transform:translate(-50%,-50%); display:flex; flex-direction:column; align-items:center; pointer-events:none; }
-.dot-mini{ width:22px; height:22px; border-radius:50%; background:#ffd166; border:2px solid #111827; display:flex; align-items:center; justify-content:center; font-weight:800; color:#111; }
-.pname-mini{ font-size:9px; margin-top:2px; max-width:80px; text-align:center; color:#e5e7eb; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-
-/* mobile helpers */
-@media (max-width: 767px){
-.cslf-card{ overflow: visible; }
-/* option: reserve height if your theme collapses the parent
-    #<PITCH_ID> { min-height: 85vw; } */
+/* Grand terrain */
+.cslf-pane[data-pane="compos"] .cslf-pitch{
+  position:relative;background:linear-gradient(#0b3d28,#0a3221);
+  border:2px solid #0a472e;border-radius:12px;height:540px;margin-top:10px;overflow:hidden
 }
-  
+.cslf-pane[data-pane="compos"] .cslf-pitch .line{position:absolute;background:#c7f9cc}
+.cslf-pane[data-pane="compos"] .cslf-pitch .center-line{left:50%;top:0;width:2px;height:100%}
+.cslf-pane[data-pane="compos"] .cslf-pitch .circle{
+  position:absolute;border:2px solid #c7f9cc;border-radius:50%;
+  left:50%;top:50%;transform:translate(-50%,-50%);width:120px;height:120px
+}
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-area{
+  width:120px;height:260px;top:50%;transform:translateY(-50%);
+  border:2px solid #c7f9cc;position:absolute;background:transparent
+}
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-left{left:0}
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-right{right:0}
+
+/* Joueurs (gros terrain) */
+.cslf-pane[data-pane="compos"] .player{
+  position:absolute;transform:translate(-50%,-50%);
+  display:flex;flex-direction:column;align-items:center;pointer-events:none
+}
+.cslf-pane[data-pane="compos"] .dot{
+  width:26px;height:26px;border-radius:50%;background:#ffd166;border:2px solid #111827;
+  display:flex;align-items:center;justify-content:center;font-weight:800;color:#111
+}
+.cslf-pane[data-pane="compos"] .pname{
+  font-size:11px;margin-top:4px;max-width:120px;text-align:center;color:#e5e7eb;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden
+}
+
+/* Mini terrain */
+.cslf-pane[data-pane="compos"] .cslf-pitch-mini{
+  position:relative;background:linear-gradient(#0b3d28,#0a3221);
+  border:2px solid #0a472e;border-radius:12px;height:260px;overflow:hidden
+}
+.cslf-pane[data-pane="compos"] .player-mini{
+  position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;pointer-events:none
+}
+.cslf-pane[data-pane="compos"] .dot-mini{
+  width:22px;height:22px;border-radius:50%;background:#ffd166;border:2px solid #111827;
+  display:flex;align-items:center;justify-content:center;font-weight:800;color:#111
+}
+.cslf-pane[data-pane="compos"] .pname-mini{
+  font-size:9px;margin-top:2px;max-width:80px;text-align:center;color:#e5e7eb;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden
+}
+
+
+/* --- Calques sur le terrain --- */
+.cslf-pane[data-pane="compos"] .cslf-pitch { position:relative; }
+.cslf-pane[data-pane="compos"] .cslf-pitch .line,
+.cslf-pane[data-pane="compos"] .cslf-pitch .circle { z-index: 1; }
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-area { z-index: 1; }
+.cslf-pane[data-pane="compos"] .player { z-index: 3; } /* déjà le cas côté JS, on verrouille en CSS */
+
+/* --- Cage (pénalty box + but) plus lisible --- */
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-area{
+  width:120px; height:260px;
+  top:50%; transform:translateY(-50%);
+  border:2px solid #c7f9cc; border-radius:2px;
+  position:absolute; background:transparent;
+  box-shadow: inset 0 0 0 1px rgba(199,249,204,.25);
+}
+
+/* “Bouche du but” (petit rectangle) pour mieux voir la cage */
+.cslf-pane[data-pane="compos"] .cslf-pitch .goal-mouth{
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:40px; height:80px; border:2px solid #c7f9cc; background:transparent;
+}
+.cslf-pane[data-pane="compos"] .cslf-pitch .mouth-left{ left:0; border-left-width:0; }
+.cslf-pane[data-pane="compos"] .cslf-pitch .mouth-right{ right:0; border-right-width:0; }
+
+/* (facultatif) Ajustements responsives spécifiques au terrain */
+@media (max-width:480px){
+  .cslf-pane[data-pane="compos"] .cslf-pitch{height:420px}
+}
+
+@media (max-width:768px){
+    .cslf-pane[data-pane="compos"] .cslf-pitch .center-line{ width:3px; }
+    .cslf-pane[data-pane="compos"] .cslf-pitch .circle{ border-width:3px; }
+    .cslf-pane[data-pane="compos"] .cslf-pitch .goal-area{ border-width:3px; }
+    .cslf-pane[data-pane="compos"] .cslf-pitch .goal-mouth{ border-width:3px; }
+  }

@@ -62,6 +62,22 @@
     return coords;
   }
 
+  function isKeeper(p){
+    var data = p.player || p;
+    var pos = String(data.pos || data.position || '').toUpperCase();
+    var num = String(data.number || '').trim();
+    return pos === 'G' || pos === 'GK' || num === '1';
+  }
+  
+  /* Force la position du gardien au centre de la cage */
+  function snapKeeperToGoal(side){
+    // x: distance horizontale en %; y: 50% = axe vertical du but
+    // on laisse 3% d'offset pour ne pas coller à la ligne
+    var x = (side === 'home') ? 4 : 96; // près de la cage gauche/droite
+    var y = 50;
+    return { x:x, y:y };
+  }
+
   // ---------- mobile rotation ----------
   function isMobile(){ return w.innerWidth < 768; }
 
@@ -247,9 +263,21 @@
 
   function positionPlayersByFormation(pitch, players, formation, isHome, bestPlayer, inst){
     applyFrameRotation(pitch);
+  
     var lineup={ startXI: players };
     var coords=computeCoordsFromGrid(lineup, isHome ? 'home':'away');
-
+  
+    // === NEW: repère l'index du gardien et le “snap” dans la cage ===
+    var gkIndex = -1;
+    for (var i=0; i<players.length; i++){
+      if (isKeeper(players[i])) { gkIndex = i; break; }
+    }
+    if (gkIndex >= 0){
+      var snapped = snapKeeperToGoal(isHome ? 'home':'away');
+      coords[gkIndex] = { x: snapped.x, y: snapped.y, p: coords[gkIndex] ? coords[gkIndex].p : (players[gkIndex].player || players[gkIndex]) };
+    }
+    // ================================================================
+  
     coords.forEach(function(coord, idx){
       if (idx<players.length){
         var pid = (players[idx].player ? players[idx].player.id : players[idx].id);
@@ -258,7 +286,7 @@
         addPlayerAtPosition(pitch, players[idx], isHome, coord.x, coord.y, idx, isMVP, inst);
       }
     });
-
+  
     applyPlayersCounterRotation(pitch);
     bindResizeSync(pitch);
   }
