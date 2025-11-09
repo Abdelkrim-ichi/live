@@ -27,7 +27,7 @@
       if (sel.hasClass("select2-hidden-accessible")) sel.select2("destroy")
       sel.select2({
         width: "100%",
-        placeholder: "Tous (aujourd'hui)",
+        placeholder: "Tous",
         allowClear: true,
         dropdownParent: sel.parent(),
         language: { noResults: () => "Aucun résultat", searching: () => "Recherche…" },
@@ -325,7 +325,7 @@
       }
 
       const prevVal = sel.val() || "all"
-      sel.empty().append('<option value="all">Tous (aujourd\'hui)</option>')
+      sel.empty().append('<option value="all">Toutes</option>')
       leagues.forEach((L) => sel.append(`<option value="${L.id}">${L.name}</option>`))
 
       const opts = sel[0]?.options ? Array.from(sel[0].options) : []
@@ -353,6 +353,9 @@
       if (isLive) {
         const minute = elapsed > 0 ? `${elapsed}'` : "LIVE"
         return `<span class="cslf-live">${minute}</span>`
+      }
+      if (st === "HT") {
+        return `<span class="cslf-halftime">${map[st] || st || ""}</span>`
       }
       return `<span class="sub">${map[st] || st || ""}</span>`
     }
