@@ -185,10 +185,149 @@
       })
     })
 
-    // Ajouter aussi les compétitions par nom pour la Supercoupe du Maroc
+    // Ajouter aussi les compétitions par nom pour la Supercoupe du Maroc et les grandes compétitions internationales
     const ALLOWED_LEAGUE_NAMES = [
       "supercoupe du maroc", "super coupe maroc"
     ]
+    const WORLD_CUP_KEYWORDS = [
+      "world cup", "fifa world cup", "coupe du monde", "world cup - women",
+      "world cup qualification", "world cup qualifiers", "world cup - qualification",
+      "world cup u17", "world cup u-17", "u17 world cup", "u-17 world cup",
+      "world cup u20", "world cup u-20", "u20 world cup", "u-20 world cup",
+      "women world cup", "fifa women world cup"
+    ]
+    const AFRICA_CUP_KEYWORDS = [
+      "africa cup", "african cup", "africa cup of nations", "africa cup qualification",
+      "coupe d'afrique", "coupe d afrique", "afcon", "caf africa cup",
+      "africa cup u17", "africa cup u-17", "africa cup u20", "africa cup u-20",
+      "africa cup of nations u17", "africa cup of nations u20"
+    ]
+    const YOUTH_KEYWORDS = ["u17", "u-17", "u20", "u-20", "u23", "u-23"]
+    const COUNTRY_TRANSLATIONS = {
+      "Morocco": "Maroc",
+      "Spain": "Espagne",
+      "France": "France",
+      "Germany": "Allemagne",
+      "England": "Angleterre",
+      "United Kingdom": "Royaume-Uni",
+      "Portugal": "Portugal",
+      "Italy": "Italie",
+      "Belgium": "Belgique",
+      "Netherlands": "Pays-Bas",
+      "United States": "États-Unis",
+      "USA": "États-Unis",
+      "Brazil": "Brésil",
+      "Argentina": "Argentine",
+      "Mexico": "Mexique",
+      "Uruguay": "Uruguay",
+      "Chile": "Chili",
+      "Colombia": "Colombie",
+      "Peru": "Pérou",
+      "Paraguay": "Paraguay",
+      "Bolivia": "Bolivie",
+      "Ecuador": "Équateur",
+      "Venezuela": "Venezuela",
+      "Canada": "Canada",
+      "Croatia": "Croatie",
+      "Serbia": "Serbie",
+      "Sweden": "Suède",
+      "Norway": "Norvège",
+      "Denmark": "Danemark",
+      "Finland": "Finlande",
+      "Iceland": "Islande",
+      "Poland": "Pologne",
+      "Czech Republic": "Tchéquie",
+      "Austria": "Autriche",
+      "Switzerland": "Suisse",
+      "Greece": "Grèce",
+      "Turkey": "Turquie",
+      "Russia": "Russie",
+      "Ukraine": "Ukraine",
+      "Romania": "Roumanie",
+      "Hungary": "Hongrie",
+      "Bulgaria": "Bulgarie",
+      "Slovakia": "Slovaquie",
+      "Slovenia": "Slovénie",
+      "Bosnia and Herzegovina": "Bosnie-Herzégovine",
+      "Albania": "Albanie",
+      "Montenegro": "Monténégro",
+      "North Macedonia": "Macédoine du Nord",
+      "Ireland": "Irlande",
+      "Scotland": "Écosse",
+      "Wales": "Pays de Galles",
+      "Northern Ireland": "Irlande du Nord",
+      "Saudi Arabia": "Arabie saoudite",
+      "Qatar": "Qatar",
+      "United Arab Emirates": "Émirats arabes unis",
+      "Oman": "Oman",
+      "Bahrain": "Bahreïn",
+      "Kuwait": "Koweït",
+      "Jordan": "Jordanie",
+      "Lebanon": "Liban",
+      "Syria": "Syrie",
+      "Iraq": "Irak",
+      "Iran": "Iran",
+      "Israel": "Israël",
+      "Egypt": "Égypte",
+      "Tunisia": "Tunisie",
+      "Algeria": "Algérie",
+      "Libya": "Libye",
+      "Sudan": "Soudan",
+      "South Sudan": "Soudan du Sud",
+      "Nigeria": "Nigéria",
+      "Ghana": "Ghana",
+      "Senegal": "Sénégal",
+      "Ivory Coast": "Côte d'Ivoire",
+      "Côte d'Ivoire": "Côte d'Ivoire",
+      "Cameroon": "Cameroun",
+      "Mali": "Mali",
+      "Burkina Faso": "Burkina Faso",
+      "Guinea": "Guinée",
+      "Guinea-Bissau": "Guinée-Bissau",
+      "Cape Verde": "Cap-Vert",
+      "South Africa": "Afrique du Sud",
+      "Zimbabwe": "Zimbabwe",
+      "Zambia": "Zambie",
+      "Tanzania": "Tanzanie",
+      "Kenya": "Kenya",
+      "Uganda": "Ouganda",
+      "Rwanda": "Rwanda",
+      "Burundi": "Burundi",
+      "Ethiopia": "Éthiopie",
+      "Somalia": "Somalie",
+      "Democratic Republic of Congo": "RDC",
+      "Congo": "Congo",
+      "Central African Republic": "République centrafricaine",
+      "Botswana": "Botswana",
+      "Namibia": "Namibie",
+      "Madagascar": "Madagascar",
+      "Mauritius": "Maurice",
+      "Comoros": "Comores",
+      "Seychelles": "Seychelles",
+      "New Caledonia": "Nouvelle-Calédonie",
+      "Australia": "Australie",
+      "New Zealand": "Nouvelle-Zélande",
+      "Japan": "Japon",
+      "China PR": "Chine",
+      "China": "Chine",
+      "South Korea": "Corée du Sud",
+      "Korea Republic": "Corée du Sud",
+      "North Korea": "Corée du Nord",
+      "Thailand": "Thaïlande",
+      "Vietnam": "Vietnam",
+      "Laos": "Laos",
+      "Cambodia": "Cambodge",
+      "Malaysia": "Malaisie",
+      "Singapore": "Singapour",
+      "Indonesia": "Indonésie",
+      "Philippines": "Philippines",
+      "India": "Inde",
+      "Pakistan": "Pakistan",
+      "Bangladesh": "Bangladesh",
+      "Sri Lanka": "Sri Lanka",
+      "Nepal": "Népal"
+    }
+    const COUNTRY_ENTRIES = Object.entries(COUNTRY_TRANSLATIONS).sort((a, b) => b[0].length - a[0].length)
 
     // === FONCTIONS DE FILTRAGE ===
     function nrm(s) {
@@ -208,8 +347,14 @@
         return true
       }
       
-      // Vérifier par nom (pour la Supercoupe du Maroc)
-      if (league.name && hasTxt(league.name, ALLOWED_LEAGUE_NAMES)) {
+      const lname = league.name || ""
+
+      // Vérifier par nom (Supercoupe, World Cups, Africa Cups)
+      if (
+        (lname && hasTxt(lname, ALLOWED_LEAGUE_NAMES)) ||
+        hasTxt(lname, WORLD_CUP_KEYWORDS) ||
+        hasTxt(lname, AFRICA_CUP_KEYWORDS)
+      ) {
         return true
       }
       
@@ -253,6 +398,18 @@
           return [priorityLevel + 1, 0]
         }
       }
+
+      // World Cups (fallback par nom)
+      if (hasTxt(leagueName, WORLD_CUP_KEYWORDS)) {
+        const isYouth = hasTxt(leagueName, YOUTH_KEYWORDS)
+        return [3, isYouth ? 1 : 0]
+      }
+
+      // Africa Cups (fallback par nom)
+      if (hasTxt(leagueName, AFRICA_CUP_KEYWORDS)) {
+        const isYouth = hasTxt(leagueName, YOUTH_KEYWORDS)
+        return [7, isYouth ? 1 : 0]
+      }
       
       return [99, 0] // Non trouvé -> priorité basse (ne devrait pas arriver avec le filtre)
     }
@@ -265,9 +422,16 @@
       const away = m?.teams?.away?.name || ""
 
       // RÈGLE 1: Maroc prioritaire dans toutes les compétitions internationales
-      if (PRIORITY_CONFIG.rules.morocco_first_when_international && 
+      if (PRIORITY_CONFIG.rules.morocco_first_when_international &&
           (isMoroccoTeam(home) || isMoroccoTeam(away))) {
-        return [0, 0] // Priorité absolue
+        const isWorldCup = hasTxt(name, WORLD_CUP_KEYWORDS)
+        const isAfricaCup = hasTxt(name, AFRICA_CUP_KEYWORDS)
+        const base = getCompetitionPriority(id, name)
+        let secondary = 0
+        if (isWorldCup) secondary = -20
+        else if (isAfricaCup) secondary = -15
+        else secondary = -10
+        return [-1, secondary]
       }
 
       // Obtenir la priorité de base de la compétition
@@ -295,13 +459,36 @@
       list.forEach((m) => {
         const L = m.league
         if (!L) return
-        ;(by[L.id] ??= { id: L.id, name: L.name, country: L.country, m: [] }).m.push(m)
+        const country = translateCountry(L.country)
+        ;(by[L.id] ??= { id: L.id, name: L.name, country, m: [] }).m.push(m)
       })
       return Object.values(by).sort((a, b) => {
         const [ka, ia] = leaguePriority({ league: a }),
           [kb, ib] = leaguePriority({ league: b })
         return ka !== kb ? ka - kb : ia !== ib ? ia - ib : (a.name || "").localeCompare(b.name || "")
       })
+    }
+
+    function translateCountry(name) {
+      if (!name) return ""
+      const norm = COUNTRY_TRANSLATIONS[name.trim()]
+      if (norm) return norm
+      const lowered = nrm(name)
+      const match = Object.entries(COUNTRY_TRANSLATIONS).find(([key]) => nrm(key) === lowered)
+      return match ? match[1] : name
+    }
+
+    function translateTeamName(name) {
+      if (!name) return ""
+      let trimmed = name.trim()
+      const lower = trimmed.toLowerCase()
+      for (const [en, fr] of COUNTRY_ENTRIES) {
+        if (lower.startsWith(en.toLowerCase())) {
+          trimmed = `${fr}${trimmed.slice(en.length)}`
+          break
+        }
+      }
+      return trimmed.replace(/\bU\s*-\s*\d+\b|\bU\d+\b/gi, "").replace(/\s+/g, " ").trim()
     }
 
     function api(path, query) {
@@ -354,10 +541,12 @@
         const minute = elapsed > 0 ? `${elapsed}'` : "LIVE"
         return `<span class="cslf-live">${minute}</span>`
       }
+      const label = map[st] || st || ""
       if (st === "HT") {
-        return `<span class="cslf-halftime">${map[st] || st || ""}</span>`
+        return `<span class="cslf-halftime">${label}</span>`
       }
-      return `<span class="sub">${map[st] || st || ""}</span>`
+      const translated = st === "NS" ? "À venir" : label
+      return `<span class="sub">${translated}</span>`
     }
 
     function renderRail(list) {
@@ -406,6 +595,8 @@
           const ga = m.goals?.away ?? "-"
           const round = m.league?.round || ""
           const venue = m.fixture?.venue?.name || ""
+          const homeName = translateTeamName(h.name || "")
+          const awayName = translateTeamName(a.name || "")
 
           const row = d.createElement("a")
           row.className = "cslf-match-row"
@@ -413,13 +604,13 @@
           row.innerHTML = `
     <div class="cslf-match-line">
       <div class="team home">
-        ${h.logo ? `<img src="${h.logo}" alt="${h.name}">` : ""}
-        <span>${h.name || ""}</span>
+        ${h.logo ? `<img src="${h.logo}" alt="${homeName || h.name || ""}">` : ""}
+        <span>${homeName}</span>
       </div>
       <div class="score">${gh}&nbsp;-&nbsp;${ga}</div>
       <div class="team away">
-        ${a.logo ? `<img src="${a.logo}" alt="${a.name}">` : ""}
-        <span>${a.name || ""}</span>
+        ${a.logo ? `<img src="${a.logo}" alt="${awayName || a.name || ""}">` : ""}
+        <span>${awayName}</span>
       </div>
     </div>
     <div class="meta">
