@@ -399,15 +399,4 @@ class CSport_Live_Foot {
             usleep(500000); // 0.5 second delay
         }
     }
-
-    private function send_safe($data) {
-        if (is_array($data) && isset($data['ok']) && $data['ok'] === false) {
-            $msg = isset($data['error']) ? (string)$data['error'] : 'Erreur API';
-            wp_send_json_error(['message' => $msg, 'payload' => $data], 200);
-        }
-        if (is_wp_error($data)) {
-            wp_send_json_error(['message' => $data->get_error_message()], 200);
-        }
-        $this->send_safe($data);
-    }
 }

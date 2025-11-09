@@ -17,19 +17,7 @@ function live_foot_results_shortcode($atts) {
 
     // jQuery + Select2 for searchable selects
     wp_enqueue_script('jquery');
-    wp_enqueue_style(
-        'lf-select2-css',
-        'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css',
-        [],
-        null
-    );
-    wp_enqueue_script(
-        'lf-select2-js',
-        'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js',
-        ['jquery'],
-        null,
-        true
-    );
+    cslf_enqueue_select2_assets();
 
     $atts = shortcode_atts([
         'refresh_ms' => '30000',

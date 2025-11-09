@@ -15,8 +15,7 @@ if (!function_exists('cslf_live_foot_results_shortcode')) {
 
     // Dépendances (jQuery + Select2)
     wp_enqueue_script('jquery');
-    wp_enqueue_style('cslf-select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css', [], null);
-    wp_enqueue_script('cslf-select2', 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js', ['jquery'], null, true);
+    cslf_enqueue_select2_assets();
 
     // Nos assets
     wp_enqueue_style('cslf-results-css', CSLF_URL . 'public/css/results.css', [], CSLF_VERSION);

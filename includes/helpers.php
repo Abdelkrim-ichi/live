@@ -233,6 +233,27 @@ function cslf_validate_api_key($api_key) {
     return true;
 }
 
+if (!function_exists('cslf_enqueue_select2_assets')) {
+  function cslf_enqueue_select2_assets() {
+    static $enqueued = false;
+    if ($enqueued) {
+      return;
+    }
+    $enqueued = true;
+
+    $local_js  = CSLF_URL . 'public/vendor/select2/select2.min.js';
+    $local_css = CSLF_URL . 'public/vendor/select2/select2.min.css';
+
+    wp_enqueue_style('cslf-select2', $local_css, [], CSLF_VERSION);
+
+    if (!wp_script_is('cslf-select2', 'registered')) {
+      wp_register_script('cslf-select2', $local_js, ['jquery'], CSLF_VERSION, true);
+    }
+
+    wp_enqueue_script('cslf-select2');
+  }
+}
+
 if (!function_exists('cslf_norm')) {
   function cslf_norm($s){ $s = is_string($s)?$s:''; $s = iconv('UTF-8','ASCII//TRANSLIT//IGNORE',$s); return strtolower(trim($s)); }
 }
