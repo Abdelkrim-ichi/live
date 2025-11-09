@@ -214,50 +214,144 @@
   height:14px;
   object-fit:contain;
 }
-.cslf-league-card {
-  background:linear-gradient(145deg, rgba(30,41,59,0.92), rgba(15,23,42,0.85)) !important;
-  border:1px solid rgba(94,234,212,0.08) !important;
-  border-radius:14px;
-  padding:14px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-  font-size:11px;
-  color:#e2e8f0 !important;
-  box-shadow:0 16px 32px rgba(15,23,42,0.35) !important;
+.cslf-schedule-section{
+  background:rgba(15,23,42,0.45);
+  border:1px solid rgba(148,163,184,0.12);
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:22px;
 }
-.cslf-league-card .meta {
-  display:flex;
-  justify-content:space-between;
-  font-size:11px;
-  color:rgba(203,213,225,0.85) !important;
-  margin-bottom:8px;
-}
-.cslf-league-card .scoreboard {
+.cslf-schedule-header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:10px;
-  color:#f8fafc !important;
+  margin-bottom:14px;
 }
-.cslf-league-card .team {
+.cslf-schedule-header h3{
+  margin:0;
+  font-size:15px;
+  color:#f8fafc;
+}
+.cslf-schedule-nav{
   display:flex;
   align-items:center;
   gap:8px;
-  font-weight:600;
-  color:#f1f5f9 !important;
 }
-.cslf-league-card .team img {
-  width:20px;
-  height:20px;
+.cslf-schedule-nav-btn{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  border:1px solid rgba(59,130,246,0.3);
+  background:rgba(59,130,246,0.16);
+  color:#bfdbfe;
+  font-size:14px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:all .2s ease;
+}
+.cslf-schedule-nav-btn:disabled{
+  opacity:0.35;
+  cursor:default;
+}
+.cslf-schedule-day{
+  font-size:12px;
+  color:#e2e8f0;
+  text-transform:capitalize;
+}
+.cslf-schedule-body{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.cslf-schedule-date{
+  font-size:12px;
+  font-weight:600;
+  color:#cbd5f5;
+  background:rgba(148,163,184,0.18);
+  border-radius:10px;
+  padding:6px 12px;
+  display:inline-flex;
+  text-transform:capitalize;
+}
+.cslf-schedule-row{
+  display:grid;
+  grid-template-columns:180px 1fr 160px;
+  gap:12px;
+  align-items:center;
+  background:rgba(15,23,42,0.55);
+  border:1px solid rgba(255,255,255,0.05);
+  border-radius:12px;
+  padding:10px 14px;
+}
+.cslf-schedule-left{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:11px;
+  color:rgba(203,213,225,0.85);
+}
+.cslf-schedule-left .round{
+  font-weight:600;
+  color:#f8fafc;
+}
+.cslf-schedule-center{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  font-size:11px;
+  color:#f8fafc;
+}
+.cslf-schedule-center .team{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-weight:600;
+  text-align:left;
+}
+.cslf-schedule-center .team.is-away{
+  justify-content:flex-end;
+  text-align:right;
+  flex-direction:row-reverse;
+}
+.cslf-schedule-center .team.is-away img{
+  margin-left:0;
+  margin-right:6px;
+}
+.cslf-schedule-center .team:last-child{
+  justify-content:flex-end;
+  text-align:right;
+}
+.cslf-schedule-center .team img{
+  width:18px;
+  height:18px;
   object-fit:contain;
 }
-.cslf-league-card .score {
-  font-size:16px;
+.cslf-schedule-center .score{
   font-weight:700;
-  color:#f8fafc !important;
+  font-size:13px;
+  min-width:54px;
+  text-align:center;
 }
-
+.cslf-schedule-right{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:10px;
+  color:rgba(203,213,225,0.8);
+  text-align:right;
+}
+.cslf-schedule-right .status{
+  font-weight:600;
+  text-transform:capitalize;
+  color:#38bdf8;
+}
+.cslf-schedule-right .venue{
+  color:rgba(203,213,225,0.6);
+}
 .cslf-league-matches h3,
 .cslf-league-overview-section h3 {
   margin:0 0 12px;

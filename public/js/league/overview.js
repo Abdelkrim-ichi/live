@@ -2,7 +2,7 @@
   const ns = (w.CSLF_LEAGUE_TAB_HANDLERS =
     w.CSLF_LEAGUE_TAB_HANDLERS || {})
 
-  ns.overview = function ({ panel, data }) {
+  ns.overview = function ({ panel, data, root }) {
     const panelEl = panel && panel.jquery ? panel.get(0) : panel
     clear(panel)
 
@@ -20,80 +20,160 @@
     const wrap = document.createElement('div')
     wrap.className = 'cslf-league-overview'
 
-    const nextBlock = createSection()
-    const lastBlock = createSection()
+    const upcomingSection = renderScheduleSection('À venir', next, {
+      ascending: true,
+      isPast: false,
+    })
+    const recentSection = renderScheduleSection('Résultats récents', last, {
+      ascending: false,
+      isPast: true,
+    })
 
-    if (next.length) {
-      append(nextBlock, '<h3>À venir</h3>')
-      append(nextBlock, renderFixtures(next))
-    }
-
-    if (last.length) {
-      append(lastBlock, '<h3>Résultats récents</h3>')
-      append(lastBlock, renderFixtures(last))
-    }
-
-    append(wrap, nextBlock)
-    append(wrap, lastBlock)
+    if (upcomingSection) append(wrap, upcomingSection)
+    if (recentSection) append(wrap, recentSection)
 
     if ((data?.standings || []).length) {
       append(
         wrap,
         renderStandings(
           data.standings,
-          data?.standings_full || data?.standings
+          data?.standings_full || data?.standings,
+          root
         )
       )
     }
     append(panelEl, wrap)
   }
 
-  function renderFixtures(list) {
-    const grid = document.createElement('div')
-    grid.className = 'cslf-league-overview-grid'
-    list.forEach((fx) => {
-      const home = fx?.teams?.home || {}
-      const away = fx?.teams?.away || {}
-      const goals = fx?.goals || {}
-      const status = fx?.fixture?.status || {}
-      const meta = fx?.league || {}
+  function renderScheduleSection(title, fixtures, options = {}) {
+    const groups = groupFixturesByDay(
+      fixtures,
+      options.ascending !== undefined ? options.ascending : true
+    )
+    if (!groups.length) return null
 
-      const card = document.createElement('div')
-      card.className = 'cslf-league-card'
+    const section = document.createElement('div')
+    section.className = 'cslf-schedule-section'
 
-      const header = document.createElement('div')
-      header.className = 'meta'
-      header.innerHTML = `<span>${formatRound(meta?.round)}</span><span>${formatDate(
-        fx?.fixture?.date
-      )}</span>`
+    const header = document.createElement('div')
+    header.className = 'cslf-schedule-header'
 
-      const scoreboard = document.createElement('div')
-      scoreboard.className = 'scoreboard'
-      scoreboard.innerHTML = `
-        <div class="team">
-          ${logo(home)}
-          <span>${cleanName(home?.name)}</span>
-        </div>
-        <div class="score">${score(goals?.home)} – ${score(goals?.away)}</div>
-        <div class="team" style="justify-content:flex-end;">
-          <span>${cleanName(away?.name)}</span>
-          ${logo(away)}
-        </div>
-      `
+    const titleEl = document.createElement('h3')
+    titleEl.textContent = title
+    header.appendChild(titleEl)
 
-      const footer = document.createElement('div')
-      footer.className = 'meta'
-      footer.innerHTML = `<span>${statusLabel(status)}</span>`
-      if (fx?.fixture?.venue?.name) {
-        footer.innerHTML += `<span>${fx.fixture.venue.name}</span>`
+    const nav = document.createElement('div')
+    nav.className = 'cslf-schedule-nav'
+
+    const prev = document.createElement('button')
+    prev.type = 'button'
+    prev.className = 'cslf-schedule-nav-btn'
+    prev.innerHTML = '&#x276E;'
+
+    const label = document.createElement('span')
+    label.className = 'cslf-schedule-day'
+
+    const next = document.createElement('button')
+    next.type = 'button'
+    next.className = 'cslf-schedule-nav-btn'
+    next.innerHTML = '&#x276F;'
+
+    nav.append(prev, label, next)
+    header.appendChild(nav)
+    section.appendChild(header)
+
+    const body = document.createElement('div')
+    body.className = 'cslf-schedule-body'
+    section.appendChild(body)
+
+    const state = { index: 0 }
+
+    function update() {
+      const group = groups[state.index]
+      label.textContent = group?.label || '--'
+      prev.disabled = state.index <= 0
+      next.disabled = state.index >= groups.length - 1
+      body.innerHTML = ''
+
+      if (!group) {
+        body.innerHTML =
+          '<div class="cslf-league-empty">Aucune rencontre disponible.</div>'
+        return
       }
 
-      append(card, header)
-      append(card, scoreboard)
-      append(card, footer)
-      append(grid, card)
+      const dayLabel = document.createElement('div')
+      dayLabel.className = 'cslf-schedule-date'
+      dayLabel.textContent = group.label
+      body.appendChild(dayLabel)
+
+      group.fixtures.forEach((fx) => {
+        body.appendChild(renderScheduleRow(fx, options.isPast))
+      })
+    }
+
+    prev.addEventListener('click', () => {
+      if (state.index > 0) {
+        state.index -= 1
+        update()
+      }
     })
-    return grid
+
+    next.addEventListener('click', () => {
+      if (state.index < groups.length - 1) {
+        state.index += 1
+        update()
+      }
+    })
+
+    update()
+    return section
+  }
+
+  function renderScheduleRow(fx, isPast) {
+    const home = fx?.teams?.home || {}
+    const away = fx?.teams?.away || {}
+    const goals = fx?.goals || {}
+    const status = fx?.fixture?.status || {}
+    const meta = fx?.league || {}
+
+    const row = document.createElement('div')
+    row.className = 'cslf-schedule-row'
+
+    const left = document.createElement('div')
+    left.className = 'cslf-schedule-left'
+    left.innerHTML = `
+      <span class="round">${formatRound(meta?.round)}</span>
+      <span class="time">${formatTime(fx?.fixture?.date)}</span>
+    `
+
+    const center = document.createElement('div')
+    center.className = 'cslf-schedule-center'
+    center.innerHTML = `
+      <span class="team">
+        ${logo(home)}
+        <span>${cleanName(home?.name)}</span>
+      </span>
+      <span class="score">${score(goals?.home)} <span class="dash">-</span> ${score(
+      goals?.away
+    )}</span>
+      <span class="team is-away">
+        ${logo(away)}
+        <span>${cleanName(away?.name)}</span>
+      </span>
+    `
+
+    const right = document.createElement('div')
+    right.className = 'cslf-schedule-right'
+    const statusText = statusLabel(status) || (isPast ? 'Terminé' : 'À venir')
+    right.innerHTML = `
+      <span class="status ${status?.short || ''}">${statusText}</span>
+      <span class="venue">${fx?.fixture?.venue?.name || ''}</span>
+    `
+
+    row.appendChild(left)
+    row.appendChild(center)
+    row.appendChild(right)
+    return row
   }
 
   function cleanName(name) {
@@ -106,18 +186,16 @@
     return `<img src="${team.logo}" alt="${team.name}" width="18" height="18">`
   }
 
-  function formatDate(date) {
+  function formatTime(date) {
     if (!date) return ''
     try {
       const d = new Date(date)
-      return d.toLocaleString([], {
-        day: '2-digit',
-        month: 'short',
+      return d.toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
       })
     } catch (e) {
-      return date
+      return ''
     }
   }
 
@@ -144,7 +222,7 @@
     return label
   }
 
-  function renderStandings(rows, fullStandings) {
+  function renderStandings(rows, fullStandings, root) {
     const box = document.createElement('div')
     box.className = 'cslf-overview-standings'
     const heading = document.createElement('h3')
@@ -154,9 +232,9 @@
     link.type = 'button'
     link.className = 'cslf-view-full'
     link.textContent = 'Voir le classement complet'
-    link.addEventListener('click', () => {
-      if (!fullStandings) return
-      renderFullStandings(fullStandings)
+    link.addEventListener('click', (evt) => {
+      evt.preventDefault()
+      navigateToStandingsTab(root)
     })
     box.appendChild(link)
 
@@ -204,68 +282,6 @@
     return box
   }
 
-  function renderFullStandings(fullStandings) {
-    const modal = document.createElement('div')
-    modal.className = 'cslf-modal-overlay standings'
-    modal.innerHTML = `
-      <div class="cslf-modal-content standings">
-        <button class="cslf-modal-close" aria-label="Fermer">×</button>
-        <h3>Classement complet</h3>
-        <div class="cslf-modal-body"></div>
-      </div>
-    `
-    const body = modal.querySelector('.cslf-modal-body')
-    const table = document.createElement('table')
-    table.className = 'cslf-league-standings-table'
-    table.innerHTML = `
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Équipe</th>
-          <th>J</th>
-          <th>G</th>
-          <th>N</th>
-          <th>P</th>
-          <th>+/-</th>
-          <th>Pts</th>
-          <th>Forme</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    `
-    const tbody = table.querySelector('tbody')
-    fullStandings.forEach((row) => {
-      const tr = document.createElement('tr')
-      tr.innerHTML = `
-        <td>${row.rank ?? '-'}</td>
-        <td>
-          <div class="team">
-            ${row.team?.logo ? `<img src="${row.team.logo}" alt="${row.team.name}" width="16" height="16">` : ''}
-            <span>${row.team?.name || ''}</span>
-          </div>
-        </td>
-        <td>${row.points ?? '-'}</td>
-        <td>${row.all?.played ?? '-'}</td>
-        <td>${row.all?.win ?? '-'}</td>
-        <td>${row.all?.draw ?? '-'}</td>
-        <td>${row.all?.lose ?? '-'}</td>
-        <td>${row.goalsDiff ?? '-'}</td>
-        <td>${row.points ?? '-'}</td>
-        <td>${renderForm(row.form)}</td>
-      `
-      tbody.appendChild(tr)
-    })
-    body.appendChild(table)
-
-    modal.querySelector('.cslf-modal-close').addEventListener('click', () => {
-      modal.remove()
-    })
-    modal.addEventListener('click', (evt) => {
-      if (evt.target === modal) modal.remove()
-    })
-    document.body.appendChild(modal)
-  }
-
   function renderForm(formString) {
     if (!formString) return ''
     return formString
@@ -293,10 +309,75 @@
     }
   }
 
-  function createSection() {
-    const div = document.createElement('div')
-    div.className = 'cslf-league-overview-section'
-    return div
+  function groupFixturesByDay(fixtures, ascending = true) {
+    if (!Array.isArray(fixtures)) return []
+    const map = new Map()
+    fixtures.forEach((fx) => {
+      const when = fx?.fixture?.date
+      if (!when) return
+      const key = normalizeDayKey(when)
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(fx)
+    })
+
+    const sorted = Array.from(map.entries()).sort((a, b) => {
+      return ascending
+        ? a[0].localeCompare(b[0])
+        : b[0].localeCompare(a[0])
+    })
+
+    return sorted.map(([key, list]) => ({
+      key,
+      label: formatDayLabel(key),
+      fixtures: list.sort((a, b) =>
+        ascending
+          ? new Date(a?.fixture?.date || 0) - new Date(b?.fixture?.date || 0)
+          : new Date(b?.fixture?.date || 0) - new Date(a?.fixture?.date || 0)
+      ),
+    }))
+  }
+
+  function normalizeDayKey(date) {
+    try {
+      const d = new Date(date)
+      d.setHours(0, 0, 0, 0)
+      const year = d.getFullYear()
+      const month = String(d.getMonth() + 1).padStart(2, '0')
+      const day = String(d.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
+    } catch (e) {
+      return ''
+    }
+  }
+
+  function formatDayLabel(key) {
+    if (!key) return ''
+    try {
+      const parts = key.split('-')
+      const d = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+      )
+      return d.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      })
+    } catch (e) {
+      return key
+    }
+  }
+
+  function navigateToStandingsTab(root) {
+    const rootEl = root?.jquery ? root.get(0) : root
+    if (!rootEl) return
+    const tab = rootEl.querySelector('.cslf-league-tab[data-tab="standings"]')
+    if (tab) {
+      tab.click()
+      tab.focus?.()
+    }
   }
 
   function append(parent, child) {

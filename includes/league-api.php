@@ -118,18 +118,94 @@ function cslf_resolve_league_season($league_id, $season) {
 function cslf_league_api_overview($league_id, $season = '') {
     $season = cslf_resolve_league_season($league_id, $season);
 
-    $params = [
+    $roundsResp = cslf_cached_get('/fixtures/rounds', [
         'league' => $league_id,
         'season' => $season,
-        'next'   => 5,
-    ];
+    ], 3600);
 
-    $fixtures = cslf_cached_get('/fixtures', $params, 300);
-    $recent   = cslf_cached_get('/fixtures', [
-        'league' => $league_id,
-        'season' => $season,
-        'last'   => 5,
-    ], 300);
+    $currentRoundResp = cslf_cached_get('/fixtures/rounds', [
+        'league'  => $league_id,
+        'season'  => $season,
+        'current' => 'true',
+    ], 3600);
+
+    $rounds        = array_values($roundsResp['response'] ?? []);
+    $currentRound  = $currentRoundResp['response'][0] ?? ($rounds[0] ?? '');
+    $currentIndex  = array_search($currentRound, $rounds, true);
+    if ($currentIndex === false) {
+        $currentIndex = 0;
+    }
+
+    $finishedStatuses = ['FT', 'AET', 'PEN'];
+
+    $currentFixturesResp = $currentRound
+        ? cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'round'  => $currentRound,
+        ], 300)
+        : ['response' => []];
+
+    $currentFixtures = $currentFixturesResp['response'] ?? [];
+
+    $upcomingCurrent = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
+        $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
+        return !in_array($short, $finishedStatuses, true);
+    }));
+
+    $nextRound    = $rounds[$currentIndex + 1] ?? '';
+    $nextFixtures = [];
+    if ($nextRound) {
+        $nextResp     = cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'round'  => $nextRound,
+        ], 300);
+        $nextFixtures = $nextResp['response'] ?? [];
+    }
+
+    $upcoming = cslf_unique_fixtures(array_merge($upcomingCurrent, $nextFixtures));
+
+    if (empty($upcoming)) {
+        $fallback = cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'next'   => 20,
+        ], 300);
+        $upcoming = $fallback['response'] ?? [];
+    }
+
+    $recent = [];
+    $prevRound = $rounds[$currentIndex - 1] ?? '';
+    if ($prevRound) {
+        $prevResp = cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'round'  => $prevRound,
+        ], 300);
+        $recent = array_values(array_filter($prevResp['response'] ?? [], function ($fixture) use ($finishedStatuses) {
+            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
+            return in_array($short, $finishedStatuses, true);
+        }));
+    }
+
+    if (empty($recent)) {
+        $recent = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
+            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
+            return in_array($short, $finishedStatuses, true);
+        }));
+    }
+
+    if (empty($recent)) {
+        $fallbackRecent = cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'last'   => 15,
+        ], 300);
+        $recent = $fallbackRecent['response'] ?? [];
+    }
+
+    $recent = cslf_unique_fixtures($recent);
 
     $standingsResp = cslf_cached_get('/standings', [
         'league' => $league_id,
@@ -143,11 +219,27 @@ function cslf_league_api_overview($league_id, $season = '') {
 
     return [
         'season'      => $season,
-        'next_fixtures' => $fixtures['response'] ?? [],
-        'last_fixtures' => $recent['response'] ?? [],
+        'next_fixtures' => array_slice($upcoming, 0, 40),
+        'last_fixtures' => array_slice($recent, 0, 40),
         'standings'     => array_slice($standings, 0, 5),
         'standings_full'=> $standings,
     ];
+}
+
+function cslf_unique_fixtures(array $fixtures) {
+    $seen = [];
+    $unique = [];
+    foreach ($fixtures as $fixture) {
+        $id = $fixture['fixture']['id'] ?? null;
+        if ($id && isset($seen[$id])) {
+            continue;
+        }
+        if ($id) {
+            $seen[$id] = true;
+        }
+        $unique[] = $fixture;
+    }
+    return $unique;
 }
 
 function cslf_league_api_standings($league_id, $season = '') {
