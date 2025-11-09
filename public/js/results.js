@@ -595,8 +595,8 @@
           const ga = m.goals?.away ?? "-"
           const round = m.league?.round || ""
           const venue = m.fixture?.venue?.name || ""
-          const [homeName] = translateTeamName(h.name || "", h.id)
-          const [awayName] = translateTeamName(a.name || "", a.id)
+          const homeName = translateTeamName(h.name || "")
+          const awayName = translateTeamName(a.name || "")
 
           const row = d.createElement("div")
           row.className = "cslf-match-row"
