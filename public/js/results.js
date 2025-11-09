@@ -408,14 +408,16 @@
           row.className = "cslf-match-row"
           row.href = (C.detailUrl || "#") + "?fixture=" + m.fixture.id
           row.innerHTML = `
-    <div class="team home">
-      ${h.logo ? `<img src="${h.logo}" alt="${h.name}">` : ""}
-      <span>${h.name || ""}</span>
-    </div>
-    <div class="score">${gh}&nbsp;-&nbsp;${ga}</div>
-    <div class="team away">
-      ${a.logo ? `<img src="${a.logo}" alt="${a.name}">` : ""}
-      <span>${a.name || ""}</span>
+    <div class="cslf-match-line">
+      <div class="team home">
+        ${h.logo ? `<img src="${h.logo}" alt="${h.name}">` : ""}
+        <span>${h.name || ""}</span>
+      </div>
+      <div class="score">${gh}&nbsp;-&nbsp;${ga}</div>
+      <div class="team away">
+        ${a.logo ? `<img src="${a.logo}" alt="${a.name}">` : ""}
+        <span>${a.name || ""}</span>
+      </div>
     </div>
     <div class="meta">
       ${badge(st)}
