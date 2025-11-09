@@ -290,18 +290,6 @@
       return basePriority
     }
 
-    function sortByPriority(list) {
-      if (!Array.isArray(list)) return
-      list.sort((a, b) => {
-        const pa = leaguePriority(a), pb = leaguePriority(b)
-        if (pa[0] !== pb[0]) return pa[0] - pb[0]
-        if (pa[1] !== pb[1]) return pa[1] - pb[1]
-        const na = nrm(a.league?.name), nb = nrm(b.league?.name)
-        if (na !== nb) return na < nb ? -1 : 1
-        return (new Date(a.fixture?.date || 0)) - (new Date(b.fixture?.date || 0))
-      })
-    }
-
     function groupLeagues(list) {
       const by = {}
       list.forEach((m) => {
@@ -369,72 +357,79 @@
       return `<span class="sub">${map[st] || st || ""}</span>`
     }
 
-    function filterByLeague(list) {
-      const v = sel.val() || "all"
-      if (v === "all") return list
-      const id = Number.parseInt(v, 10)
-      return list.filter((m) => m.league && m.league.id === id)
-    }
-
     function renderRail(list) {
       if (!rail) return
       
       // FILTRE: seulement les compétitions autorisées
       const allowedList = filterAllowedMatches(list)
-      const out = filterByLeague(allowedList)
-      
-      empty.toggle(out.length === 0)
+      const grouped = groupLeagues(allowedList)
+      const current = sel.length ? sel.val() || "all" : "all"
+      const visibleGroups = current === "all"
+        ? grouped
+        : grouped.filter((g) => String(g.id) === String(current))
+
+      const totalMatches = visibleGroups.reduce((sum, g) => sum + g.m.length, 0)
+      empty.toggle(totalMatches === 0)
       rail.innerHTML = ""
-      if (!out.length) {
+      if (!totalMatches) {
         updateNav()
         return
       }
 
-      sortByPriority(out)
-      const grouped = groupLeagues(out)
       const frag = d.createDocumentFragment()
-      grouped.forEach((G) => {
-        G.m.forEach((m) => {
-          const h = m.teams.home,
-            a = m.teams.away,
-            st = m.fixture.status
-          const gh = m.goals.home ?? "-",
-            ga = m.goals.away ?? "-"
-          const sub = m.league?.round || m.fixture?.venue?.name || ""
-          const el = d.createElement("a")
-          el.className = "cslf-card"
-          el.href = (C.detailUrl || "#") + "?fixture=" + m.fixture.id
-          el.innerHTML = `
-  <div class="head">
-    <div>
-      <div class="league">${G.name}</div>
-      <div class="sub">${sub}</div>
-    </div>
-    ${badge(st)}
-  </div>
-
-  <div class="grid">
-    <div class="team home">
-      ${h.logo ? `<img src="${h.logo}" alt="${h.name}">` : ""}
-      <span>${h.name}</span>
-    </div>
-    <div class="score home">${gh}</div>
-
-    <div class="team away">
-      ${a.logo ? `<img src="${a.logo}" alt="${a.name}">` : ""}
-      <span>${a.name}</span>
-    </div>
-    <div class="score away">${ga}</div>
-  </div>
-
-  <div class="meta">
-    <span>${fmtTime(m.fixture.date)}</span>
-    <span>${m.league.country || ""}</span>
+      visibleGroups.forEach((G) => {
+        const leagueBox = d.createElement("div")
+        leagueBox.className = "cslf-league-block"
+        leagueBox.innerHTML = `
+  <div class="cslf-league-header">
+    <span class="cslf-league-title">${G.name}</span>
+    <span class="cslf-league-country">${G.country || ""}</span>
   </div>
 `
-          frag.appendChild(el)
+        const listEl = d.createElement("div")
+        listEl.className = "cslf-match-list"
+
+        const matches = [...G.m].sort((a, b) => {
+          const da = new Date(a.fixture?.date || 0).getTime()
+          const db = new Date(b.fixture?.date || 0).getTime()
+          return da - db
         })
+
+        matches.forEach((m) => {
+          const h = m.teams.home || {}
+          const a = m.teams.away || {}
+          const st = m.fixture?.status || {}
+          const gh = m.goals?.home ?? "-"
+          const ga = m.goals?.away ?? "-"
+          const round = m.league?.round || ""
+          const venue = m.fixture?.venue?.name || ""
+
+          const row = d.createElement("a")
+          row.className = "cslf-match-row"
+          row.href = (C.detailUrl || "#") + "?fixture=" + m.fixture.id
+          row.innerHTML = `
+    <div class="team home">
+      ${h.logo ? `<img src="${h.logo}" alt="${h.name}">` : ""}
+      <span>${h.name || ""}</span>
+    </div>
+    <div class="score">${gh}&nbsp;-&nbsp;${ga}</div>
+    <div class="team away">
+      ${a.logo ? `<img src="${a.logo}" alt="${a.name}">` : ""}
+      <span>${a.name || ""}</span>
+    </div>
+    <div class="meta">
+      ${badge(st)}
+      <span class="time">${fmtTime(m.fixture?.date)}</span>
+      <span class="extra">${round || venue}</span>
+    </div>
+  `
+          listEl.appendChild(row)
+        })
+
+        leagueBox.appendChild(listEl)
+        frag.appendChild(leagueBox)
       })
+
       rail.appendChild(frag)
       updateNav()
     }
@@ -449,7 +444,7 @@
 
     function scrollBy(dir) {
       if (!rail) return
-      const card = rail.querySelector(".cslf-card")
+      const card = rail.querySelector(".cslf-league-block")
       const step = card ? (card.getBoundingClientRect().width + 10) * 2 : rail.clientWidth * 0.8
       rail.scrollBy({ left: dir * step, behavior: "smooth" })
       setTimeout(updateNav, 300)
@@ -488,10 +483,10 @@
           const arr = Array.isArray(p.data?.response) ? p.data.response : []
           
           // FILTRE APPLIQUÉ ICI : seulement les compétitions autorisées
-          LAST = filterAllowedMatches(arr)
+          LAST = arr
           populateSelect(LAST)
           renderRail(LAST)
-          const next = calcNextInterval(LAST)
+          const next = calcNextInterval(filterAllowedMatches(LAST))
           if (POLL) POLL._lastInterval = next
           scheduleNext(next)
         })
