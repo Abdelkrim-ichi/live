@@ -595,12 +595,11 @@
           const ga = m.goals?.away ?? "-"
           const round = m.league?.round || ""
           const venue = m.fixture?.venue?.name || ""
-          const homeName = translateTeamName(h.name || "")
-          const awayName = translateTeamName(a.name || "")
+          const [homeName] = translateTeamName(h.name || "", h.id)
+          const [awayName] = translateTeamName(a.name || "", a.id)
 
-          const row = d.createElement("a")
+          const row = d.createElement("div")
           row.className = "cslf-match-row"
-          row.href = (C.detailUrl || "#") + "?fixture=" + m.fixture.id
           row.innerHTML = `
     <div class="cslf-match-line">
       <div class="team home">
