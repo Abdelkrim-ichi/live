@@ -11,7 +11,13 @@ if (!function_exists('cslf_live_foot_results_shortcode')) {
 
     $a = shortcode_atts([
       'detail_url' => '#',
+      'league_url' => '',
     ], $atts, 'live_foot_results');
+
+    $league_url = !empty($a['league_url']) ? esc_url_raw($a['league_url']) : '';
+    if (empty($league_url)) {
+      $league_url = home_url('/league-dashboard/');
+    }
 
     // Dépendances (jQuery + Select2)
     wp_enqueue_script('jquery');
@@ -30,6 +36,7 @@ if (!function_exists('cslf_live_foot_results_shortcode')) {
       'nonce'      => wp_create_nonce('cslf_nonce'),
       'detailUrl'  => $a['detail_url'],
       'timezone'   => $opts['timezone'] ?: 'UTC',
+      'leagueUrl'  => esc_url($league_url),
     ]);
 
     // Markup minimal

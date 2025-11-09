@@ -479,7 +479,7 @@
     }
 
     function translateTeamName(name) {
-      if (!name) return ""
+      if (!name) return ["", null]
       let trimmed = name.trim()
       const lower = trimmed.toLowerCase()
       for (const [en, fr] of COUNTRY_ENTRIES) {
@@ -488,7 +488,11 @@
           break
         }
       }
-      return trimmed.replace(/\bU\s*-\s*\d+\b|\bU\d+\b/gi, "").replace(/\s+/g, " ").trim()
+      const label = trimmed
+        .replace(/\bU\s*-\s*\d+\b|\bU\d+\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim()
+      return [label, null]
     }
 
     function api(path, query) {
@@ -574,7 +578,9 @@
         leagueBox.className = "cslf-league-block"
         leagueBox.innerHTML = `
   <div class="cslf-league-header">
-    <span class="cslf-league-title">${G.name}</span>
+    <a class="cslf-league-title" href="${buildLeagueUrl(G)}">
+      ${G.name}
+    </a>
     <span class="cslf-league-country">${G.country || ""}</span>
   </div>
 `
@@ -595,8 +601,8 @@
           const ga = m.goals?.away ?? "-"
           const round = m.league?.round || ""
           const venue = m.fixture?.venue?.name || ""
-          const homeName = translateTeamName(h.name || "")
-          const awayName = translateTeamName(a.name || "")
+          const [homeName] = translateTeamName(h.name || "")
+          const [awayName] = translateTeamName(a.name || "")
 
           const row = d.createElement("div")
           row.className = "cslf-match-row"
@@ -627,6 +633,21 @@
 
       rail.appendChild(frag)
       updateNav()
+    }
+
+    function buildLeagueUrl(group) {
+      const base = (C.leagueUrl || "").trim()
+      if (!base) return "#"
+      const url = new URL(base, w.location.origin)
+      if (group?.id) url.searchParams.set("league_id", group.id)
+
+      const season =
+        group?.season ||
+        (Array.isArray(group?.m) && group.m.length
+          ? group.m[0]?.league?.season
+          : null)
+      if (season) url.searchParams.set("season", season)
+      return url.toString()
     }
 
     function updateNav() {
