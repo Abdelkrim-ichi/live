@@ -29,7 +29,6 @@
 /* League blocks */
 .cslf-league-block{
   flex:0 0 260px;
-  max-width:280px;
   scroll-snap-align:start;
   background:var(--card);
   border:1px solid var(--border);
@@ -61,9 +60,13 @@
 }
 .cslf-match-list{
   display:flex;
-  flex-direction:column;
-  gap:8px;
+  flex-direction:row;
+  gap:12px;
+  overflow-x:auto;
+  padding-bottom:4px;
 }
+.cslf-match-list::-webkit-scrollbar{height:6px}
+.cslf-match-list::-webkit-scrollbar-thumb{background:#d0d3d8;border-radius:999px}
 .cslf-match-row{
   display:flex;
   flex-direction:column;
@@ -78,6 +81,7 @@
   font-size:13px;
   line-height:1.35;
   transition:background .2s ease, border-color .2s ease, box-shadow .2s ease;
+  min-width:230px;
 }
 .cslf-match-row:hover{
   background:#eef2f9;

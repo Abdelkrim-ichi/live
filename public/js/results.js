@@ -447,7 +447,7 @@
     function scrollBy(dir) {
       if (!rail) return
       const card = rail.querySelector(".cslf-league-block")
-      const step = card ? (card.getBoundingClientRect().width + 10) * 2 : rail.clientWidth * 0.8
+      const step = card ? (card.getBoundingClientRect().width + 16) * 2 : rail.clientWidth * 0.8
       rail.scrollBy({ left: dir * step, behavior: "smooth" })
       setTimeout(updateNav, 300)
     }
