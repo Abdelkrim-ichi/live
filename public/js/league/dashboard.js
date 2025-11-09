@@ -60,7 +60,24 @@
       }
 
       const seasons = normalizeSeasons(config)
-      initSeasonSelector($root, seasons, config)
+      initSeasonSelector($root, seasons, config, state, () => {
+        state.cache = {}
+        state.active = null
+        updateSeasonBadge($root, config.season)
+        try {
+          localStorage.setItem(
+            'cslf_league_season_' + config.league_id,
+            config.season
+          )
+        } catch (e) {}
+        const currentTab =
+          state.active ||
+          $tabs.filter('.is-active').data('tab') ||
+          $tabs.first().data('tab')
+        if (currentTab) {
+          setActive(currentTab, state)
+        }
+      })
 
       function setLoading(isLoading) {
         state.isLoading = !!isLoading
@@ -233,38 +250,65 @@ function normalizeSeasons(config) {
   return out
 }
 
-function initSeasonSelector($root, seasons, config) {
-  const select = $root.find('.cslf-season-switch')
-  if (!select.length) return
+function initSeasonSelector($root, seasons, config, state, onSeasonChange) {
+  const select = find($root, '.cslf-season-switch')
+  if (!select) return
 
+  const wrapper = select.closest('.cslf-season-select')
   if (!seasons.length) {
-    select.closest('.cslf-season-select').hide()
+    if (wrapper) wrapper.classList.add('is-hidden')
     return
-  } else {
-    select.closest('.cslf-season-select').show()
   }
+  if (wrapper) wrapper.classList.remove('is-hidden')
 
-  select.empty()
-  seasons.forEach((season) => {
-    select.append(
-      `<option value="${season.year}" ${
+  select.innerHTML = seasons
+    .map((season) => {
+      const selected =
         String(season.year) === String(config.season) ? 'selected' : ''
-      }>${formatSeasonLabel(season.year)}</option>`
-    )
-  })
+      return `<option value="${season.year}" ${selected}>${formatSeasonLabel(
+        season.year
+      )}</option>`
+    })
+    .join('')
 
   updateSeasonBadge($root, config.season)
 
-  select.on('change', function () {
-    const nextSeason = $(this).val()
+  select.addEventListener('change', function (evt) {
+    const nextSeason = evt.target.value
     if (!nextSeason || String(nextSeason) === String(config.season)) return
+    const previousSeason = config.season
+    config.season = nextSeason
+    try {
+      localStorage.removeItem(
+        'cslf_league_tab_' + config.league_id + '_' + (previousSeason || '')
+      )
+    } catch (e) {}
+
     const url = new URL(window.location.href)
-    url.searchParams.set('season', nextSeason)
     if (config.league_id) {
       url.searchParams.set('league_id', config.league_id)
     }
-    window.location.href = url.toString()
+    url.searchParams.set('season', nextSeason)
+    if (typeof history.replaceState === 'function') {
+      history.replaceState(null, '', url.toString())
+    } else {
+      window.location.href = url.toString()
+      return
+    }
+
+    if (typeof onSeasonChange === 'function') {
+      onSeasonChange(nextSeason, previousSeason, state)
+    }
   })
+}
+
+function find(root, selector) {
+  if (!root) return null
+  if (root.jquery) {
+    const found = root.find(selector)
+    return found.length ? found.get(0) : null
+  }
+  return root.querySelector(selector)
 }
 
 function updateSeasonBadge($root, season) {
