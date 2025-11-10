@@ -314,38 +314,57 @@ function find(root, selector) {
 }
 
 function ensureDashboardSkeleton($content) {
-  if (!$content || !$content.length) return
-  if ($content.children('.cslf-dashboard-skeleton').length) return
-  $content.prepend(buildDashboardSkeleton())
+  if (!$content) return
+  const container =
+    $content.jquery && $content.length ? $content.get(0) : $content
+  if (!container) return
+  if (container.querySelector('.cslf-dashboard-skeleton')) return
+  container.insertBefore(buildDashboardSkeleton(), container.firstChild)
 }
 
 function buildDashboardSkeleton() {
-  const template = `
-    <div class="cslf-dashboard-skeleton" aria-hidden="true">
-      ${Array.from({ length: 3 })
-        .map(
-          () => `
-        <section class="cslf-skeleton-section">
-          <div class="cslf-skeleton-line is-lg"></div>
-          <div class="cslf-skeleton-card">
-            <div class="cslf-skeleton-row">
-              <div class="cslf-skeleton-line is-sm"></div>
-              <div class="cslf-skeleton-line is-sm"></div>
-            </div>
-            <div class="cslf-skeleton-line"></div>
-            <div class="cslf-skeleton-line"></div>
-          </div>
-          <div class="cslf-skeleton-card">
-            <div class="cslf-skeleton-line is-sm"></div>
-            <div class="cslf-skeleton-line"></div>
-            <div class="cslf-skeleton-line"></div>
-          </div>
-        </section>`
-        )
-        .join('')}
-    </div>
-  `
-  return $(template)
+  const container = document.createElement('div')
+  container.className = 'cslf-dashboard-skeleton'
+  container.setAttribute('aria-hidden', 'true')
+
+  for (let i = 0; i < 3; i++) {
+    const section = document.createElement('section')
+    section.className = 'cslf-skeleton-section'
+
+    const title = document.createElement('div')
+    title.className = 'cslf-skeleton-line is-lg'
+    section.appendChild(title)
+
+    section.appendChild(createSkeletonCard())
+    section.appendChild(createSkeletonCard())
+
+    container.appendChild(section)
+  }
+
+  return container
+}
+
+function createSkeletonCard() {
+  const card = document.createElement('div')
+  card.className = 'cslf-skeleton-card'
+
+  const row = document.createElement('div')
+  row.className = 'cslf-skeleton-row'
+  const left = document.createElement('div')
+  left.className = 'cslf-skeleton-line is-sm'
+  const right = document.createElement('div')
+  right.className = 'cslf-skeleton-line is-sm'
+  row.appendChild(left)
+  row.appendChild(right)
+  card.appendChild(row)
+
+  for (let i = 0; i < 2; i++) {
+    const line = document.createElement('div')
+    line.className = 'cslf-skeleton-line'
+    card.appendChild(line)
+  }
+
+  return card
 }
 
 function updateSeasonBadge($root, season) {

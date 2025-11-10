@@ -5,6 +5,18 @@ if (!defined('ABSPATH')) exit;
 add_action('wp_ajax_cslf_league_api', 'cslf_ajax_league_api');
 add_action('wp_ajax_nopriv_cslf_league_api', 'cslf_ajax_league_api');
 
+function cslf_match_round_index($rounds, $target) {
+    if (empty($rounds) || empty($target)) {
+        return -1;
+    }
+    foreach ($rounds as $idx => $roundLabel) {
+        if (strcasecmp(trim($roundLabel), trim($target)) === 0) {
+            return $idx;
+        }
+    }
+    return -1;
+}
+
 /**
  * AJAX router for league dashboard data.
  */
@@ -15,6 +27,7 @@ function cslf_ajax_league_api() {
     $season    = isset($_REQUEST['season']) ? sanitize_text_field($_REQUEST['season']) : '';
     $tab       = isset($_REQUEST['tab']) ? sanitize_text_field($_REQUEST['tab']) : 'overview';
     $round     = isset($_REQUEST['round']) ? sanitize_text_field($_REQUEST['round']) : '';
+    $limit     = isset($_REQUEST['limit']) ? intval($_REQUEST['limit']) : 10;
 
     if ($league_id <= 0) {
         wp_send_json_error(['message' => __('Paramètres invalides (league_id manquant)', 'csport-live-foot')], 400);
@@ -48,6 +61,18 @@ function cslf_ajax_league_api() {
 
             case 'team':
                 $payload = cslf_league_api_team_of_week($league_id, $season);
+                break;
+
+            case 'widget_matches':
+                $payload = cslf_league_api_widget_matches($league_id, $season, $limit);
+                break;
+
+            case 'widget_standings':
+                $payload = cslf_league_api_widget_standings($league_id, $season, $limit);
+                break;
+
+            case 'widget_scorers':
+                $payload = cslf_league_api_widget_scorers($league_id, $season, $limit);
                 break;
 
             default:
@@ -122,7 +147,6 @@ function cslf_league_api_overview($league_id, $season = '') {
         'league' => $league_id,
         'season' => $season,
     ], 3600);
-
     $currentRoundResp = cslf_cached_get('/fixtures/rounds', [
         'league'  => $league_id,
         'season'  => $season,
@@ -130,10 +154,12 @@ function cslf_league_api_overview($league_id, $season = '') {
     ], 3600);
 
     $rounds        = array_values($roundsResp['response'] ?? []);
-    $currentRound  = $currentRoundResp['response'][0] ?? ($rounds[0] ?? '');
-    $currentIndex  = array_search($currentRound, $rounds, true);
-    if ($currentIndex === false) {
-        $currentIndex = 0;
+    $currentRound  = $currentRoundResp['response'][0] ?? '';
+    $currentIndex  = cslf_match_round_index($rounds, $currentRound);
+
+    if ($currentIndex < 0) {
+        $currentIndex = max(count($rounds) - 1, 0);
+        $currentRound = $rounds[$currentIndex] ?? '';
     }
 
     $finishedStatuses = ['FT', 'AET', 'PEN'];
@@ -164,16 +190,78 @@ function cslf_league_api_overview($league_id, $season = '') {
         $nextFixtures = $nextResp['response'] ?? [];
     }
 
-    $upcoming = cslf_unique_fixtures(array_merge($upcomingCurrent, $nextFixtures));
+    $upcoming = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
+        $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
+        return !in_array($short, $finishedStatuses, true);
+    }));
+
+    if (empty($upcoming) && $nextFixtures) {
+        $upcoming = $nextFixtures;
+        $currentRound = $nextRound;
+        $currentIndex = min($currentIndex + 1, count($rounds) - 1);
+        $nextRound    = $rounds[$currentIndex + 1] ?? '';
+        $currentFixtures = $nextFixtures;
+    }
 
     if (empty($upcoming)) {
         $fallback = cslf_cached_get('/fixtures', [
             'league' => $league_id,
             'season' => $season,
-            'next'   => 20,
+            'next'   => 40,
         ], 300);
         $upcoming = $fallback['response'] ?? [];
     }
+
+    if (empty($upcoming)) {
+        $fallbackRecent = cslf_cached_get('/fixtures', [
+            'league' => $league_id,
+            'season' => $season,
+            'last'   => 10,
+        ], 300);
+        $upcoming = array_values(array_filter($fallbackRecent['response'] ?? [], function ($fixture) use ($finishedStatuses) {
+            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
+            return in_array($short, $finishedStatuses, true);
+        }));
+        $detectedRound = '';
+        foreach ($upcoming as $fx) {
+            if (!empty($fx['league']['round'])) {
+                $detectedRound = $fx['league']['round'];
+                break;
+            }
+        }
+        if ($detectedRound) {
+            $detectedIndex = cslf_match_round_index($rounds, $detectedRound);
+            if ($detectedIndex >= 0) {
+                $currentRound = $rounds[$detectedIndex];
+                $currentIndex = $detectedIndex;
+            } else {
+                $currentRound = $detectedRound;
+            }
+        }
+    }
+
+    $detectedRound = '';
+    foreach ($upcoming as $fx) {
+        if (!empty($fx['league']['round'])) {
+            $detectedRound = $fx['league']['round'];
+            break;
+        }
+    }
+    if ($detectedRound) {
+        $detectedIndex = cslf_match_round_index($rounds, $detectedRound);
+        if ($detectedIndex >= 0) {
+            $currentRound = $rounds[$detectedIndex];
+            $currentIndex = $detectedIndex;
+        } else {
+            $currentRound = $detectedRound;
+        }
+    }
+
+    $fixturesPool = array_merge($currentFixtures, $nextFixtures, $upcoming);
+    $currentFixtures = array_values(array_filter($fixturesPool, function ($fx) use ($currentRound) {
+        if (!$currentRound) return false;
+        return strcasecmp($fx['league']['round'] ?? '', $currentRound) === 0;
+    }));
 
     $recent = [];
     $prevRound = $rounds[$currentIndex - 1] ?? '';
@@ -218,11 +306,13 @@ function cslf_league_api_overview($league_id, $season = '') {
     }
 
     return [
-        'season'      => $season,
-        'next_fixtures' => array_slice($upcoming, 0, 40),
-        'last_fixtures' => array_slice($recent, 0, 40),
-        'standings'     => array_slice($standings, 0, 5),
-        'standings_full'=> $standings,
+        'season'         => $season,
+        'current_round'  => $currentRound,
+        'next_round'     => $nextRound,
+        'next_fixtures'  => array_slice($upcoming, 0, 40),
+        'last_fixtures'  => array_slice($recent, 0, 40),
+        'standings'      => array_slice($standings, 0, 5),
+        'standings_full' => $standings,
     ];
 }
 
@@ -562,3 +652,139 @@ function cslf_position_slot($position) {
     return null;
 }
 
+function cslf_league_api_widget_matches($league_id, $season = '', $limit = 10) {
+    $limit = max(1, min(40, intval($limit)));
+    $meta = cslf_get_league_meta($league_id);
+    $overview = cslf_league_api_overview($league_id, $season);
+
+    $fixtures = array_slice($overview['next_fixtures'] ?? [], 0, $limit);
+    $items = [];
+
+    foreach ($fixtures as $fixture) {
+        $items[] = [
+            'id'        => $fixture['fixture']['id'] ?? null,
+            'timestamp' => $fixture['fixture']['timestamp'] ?? null,
+            'date'      => $fixture['fixture']['date'] ?? '',
+            'round'     => $fixture['league']['round'] ?? '',
+            'venue'     => $fixture['fixture']['venue']['name'] ?? '',
+            'status'    => [
+                'short' => $fixture['fixture']['status']['short'] ?? '',
+                'long'  => $fixture['fixture']['status']['long'] ?? '',
+                'elapsed' => $fixture['fixture']['status']['elapsed'] ?? null,
+            ],
+            'goals'     => [
+                'home' => $fixture['goals']['home'] ?? null,
+                'away' => $fixture['goals']['away'] ?? null,
+            ],
+            'home'      => [
+                'id'   => $fixture['teams']['home']['id'] ?? null,
+                'name' => $fixture['teams']['home']['name'] ?? '',
+                'logo' => $fixture['teams']['home']['logo'] ?? '',
+            ],
+            'away'      => [
+                'id'   => $fixture['teams']['away']['id'] ?? null,
+                'name' => $fixture['teams']['away']['name'] ?? '',
+                'logo' => $fixture['teams']['away']['logo'] ?? '',
+            ],
+        ];
+    }
+
+    return [
+        'league' => [
+            'id'      => $meta['id'],
+            'name'    => $meta['name'],
+            'logo'    => $meta['logo'],
+            'country' => $meta['country'],
+            'flag'    => $meta['flag'],
+        ],
+        'season'        => $overview['season'] ?? $season,
+        'current_round' => $overview['current_round'] ?? '',
+        'next_round'    => $overview['next_round'] ?? '',
+        'matches'       => $items,
+    ];
+}
+
+function cslf_league_api_widget_standings($league_id, $season = '', $limit = 10) {
+    $limit = max(1, min(30, intval($limit)));
+    $meta = cslf_get_league_meta($league_id);
+    $standings = cslf_league_api_standings($league_id, $season);
+
+    $table = $standings['standings'][0] ?? [];
+    $rows = [];
+    foreach ($table as $row) {
+        $rows[] = [
+            'rank'   => $row['rank'] ?? null,
+            'team'   => [
+                'id'   => $row['team']['id'] ?? null,
+                'name' => $row['team']['name'] ?? '',
+                'logo' => $row['team']['logo'] ?? '',
+            ],
+            'played' => $row['all']['played'] ?? 0,
+            'form'   => $row['form'] ?? '',
+            'diff'   => $row['goalsDiff'] ?? 0,
+            'points' => $row['points'] ?? 0,
+        ];
+        if (count($rows) >= $limit) {
+            break;
+        }
+    }
+
+    return [
+        'league' => [
+            'id'      => $meta['id'],
+            'name'    => $meta['name'],
+            'logo'    => $meta['logo'],
+            'country' => $meta['country'],
+            'flag'    => $meta['flag'],
+        ],
+        'season' => $standings['season'] ?? $season,
+        'rows'   => $rows,
+    ];
+}
+
+function cslf_league_api_widget_scorers($league_id, $season = '', $limit = 10) {
+    $limit = max(1, min(30, intval($limit)));
+    $meta = cslf_get_league_meta($league_id);
+    $stats = cslf_league_api_stats($league_id, $season);
+
+    $scorers = $stats['top_scorers'] ?? [];
+    $players = [];
+    foreach ($scorers as $entry) {
+        $player = $entry['player'] ?? [];
+        $stat   = $entry['statistics'][0] ?? [];
+        $team   = $stat['team'] ?? [];
+        $games  = $stat['games'] ?? [];
+        $goals  = $stat['goals'] ?? [];
+
+        $players[] = [
+            'id'      => $player['id'] ?? null,
+            'name'    => $player['name'] ?? '',
+            'photo'   => $player['photo'] ?? '',
+            'team'    => [
+                'id'   => $team['id'] ?? null,
+                'name' => $team['name'] ?? '',
+                'logo' => $team['logo'] ?? '',
+            ],
+            'position' => $games['position'] ?? '',
+            'played'   => $games['appearences'] ?? 0,
+            'goals'    => $goals['total'] ?? 0,
+            'assists'  => $goals['assists'] ?? 0,
+            'penalties'=> $goals['penalty'] ?? 0,
+        ];
+        if (count($players) >= $limit) {
+            break;
+        }
+    }
+
+    return [
+        'league' => [
+            'id'      => $meta['id'],
+            'name'    => $meta['name'],
+            'logo'    => $meta['logo'],
+            'country' => $meta['country'],
+            'flag'    => $meta['flag'],
+        ],
+        'season'  => $stats['season'] ?? $season,
+        'players' => $players,
+    ];
+}

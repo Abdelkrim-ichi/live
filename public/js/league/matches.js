@@ -86,10 +86,18 @@
     ;(state.rounds || []).forEach((round) => {
       const opt = document.createElement('option')
       opt.value = round
-      opt.textContent = round.replace(/_/g, ' ')
+      opt.textContent = formatRoundLabel(round)
       if (round === state.round) opt.selected = true
       select.appendChild(opt)
     })
+
+    if (state.round && !(state.rounds || []).includes(state.round)) {
+      select.value = state.round
+    }
+
+    if (!select.value && select.options.length) {
+      select.value = select.options[select.options.length - 1].value
+    }
   }
 
   function fetchRound(container, state, config, round) {
@@ -186,6 +194,15 @@
       </div>
     `
     return row
+  }
+
+  function formatRoundLabel(round) {
+    if (!round) return ''
+    const match = String(round).match(/(\d+)/)
+    if (match) {
+      return `J ${match[1]}`
+    }
+    return round.replace(/_/g, ' ')
   }
 
   function filterByPhase(fixtures, phase) {

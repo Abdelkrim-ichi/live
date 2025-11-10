@@ -1,0 +1,183 @@
+.cslf-widget,
+.cslf-widget * {
+  box-sizing:border-box;
+}
+.cslf-widget{
+  font-family:"Inter","Segoe UI",Roboto,sans-serif;
+}
+
+.cslf-widget-scorers{
+  background:#111827;
+  border-radius:18px;
+  padding:18px;
+  color:#f1f5f9;
+  width:100%;
+  max-width:320px;
+  box-shadow:0 20px 40px rgba(15,23,42,0.35);
+  position:relative;
+}
+.cslf-widget-scorers .cslf-widget-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:16px;
+}
+.cslf-widget-scorers .cslf-widget-league{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.cslf-widget-scorers .cslf-widget-league img{
+  width:36px;
+  height:36px;
+  object-fit:contain;
+}
+.cslf-widget-scorers .cslf-widget-league .name{
+  font-size:16px;
+  font-weight:700;
+  display:block;
+}
+.cslf-widget-scorers .cslf-widget-league .country{
+  font-size:12px;
+  color:#cbd5f5;
+  text-transform:uppercase;
+}
+.cslf-widget-scorers .cslf-widget-season{
+  font-size:12px;
+  padding:6px 12px;
+  border-radius:999px;
+  background:rgba(251,191,36,0.25);
+  color:#fde68a;
+  font-weight:600;
+}
+
+.cslf-widget-scorers .cslf-widget-body{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.cslf-widget-scorer{
+  display:grid;
+  grid-template-columns:28px 1fr 60px;
+  align-items:center;
+  gap:10px;
+  background:rgba(17,24,39,0.65);
+  border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;
+  padding:10px 12px;
+}
+.cslf-widget-scorer .position{
+  font-weight:700;
+  font-size:14px;
+  color:#facc15;
+  text-align:center;
+}
+.cslf-widget-scorer .player{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  min-width:0;
+}
+.cslf-widget-scorer .avatar-wrap{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.cslf-widget-scorer .avatar-wrap img,
+.cslf-widget-scorer .avatar-placeholder{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  object-fit:cover;
+  background:rgba(30,41,59,0.6);
+}
+.cslf-widget-scorer .avatar-wrap .name{
+  font-weight:600;
+  font-size:12px;
+  text-align:center;
+  max-width:90px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.cslf-widget-scorer .club{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:#cbd5f5;
+  font-size:12px;
+  min-width:0;
+}
+.cslf-widget-scorer .club img{
+  width:20px;
+  height:20px;
+  object-fit:contain;
+}
+.cslf-widget-scorer .club span{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.cslf-widget-scorer .stats{
+  display:flex;
+  align-items:flex-end;
+  justify-content:flex-end;
+  font-size:16px;
+  font-weight:700;
+  color:#facc15;
+}
+
+.cslf-widget-empty{
+  font-size:12px;
+  color:#cbd5f5;
+  text-align:center;
+  padding:16px 10px;
+  border-radius:12px;
+  border:1px dashed rgba(148,163,184,0.25);
+}
+.cslf-widget-error{
+  margin-top:12px;
+  padding:10px 12px;
+  font-size:12px;
+  border-radius:10px;
+  background:rgba(248,113,113,0.15);
+  color:#fca5a5;
+  text-align:center;
+}
+
+@keyframes cslf-scorers-shimmer {
+  0% { background-position:-200% 0; }
+  100% { background-position:200% 0; }
+}
+.cslf-widget-shell.is-loading .cslf-skeleton-line,
+.cslf-widget-shell.is-loading .cslf-skeleton-avatar{
+  animation:cslf-scorers-shimmer 1.6s ease-in-out infinite;
+  background:linear-gradient(90deg, rgba(71,85,105,0.25), rgba(148,163,184,0.45), rgba(71,85,105,0.25));
+  background-size:200% 100%;
+  opacity:.9;
+}
+.cslf-skeleton-line{
+  height:12px;
+  border-radius:999px;
+}
+.cslf-skeleton-line.is-lg{
+  height:16px;
+  width:60%;
+}
+.cslf-skeleton-line.is-sm{
+  height:10px;
+  width:40%;
+}
+.cslf-skeleton-row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.cslf-skeleton-avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+}
+

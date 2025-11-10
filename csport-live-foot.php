@@ -35,6 +35,7 @@ require_once CSLF_PATH . 'includes/shortcodes-results.php';
 require_once CSLF_PATH . 'includes/shortcodes-detail.php';
 require_once CSLF_PATH . 'includes/league-api.php';
 require_once CSLF_PATH . 'includes/shortcodes-league-dashboard.php';
+require_once CSLF_PATH . 'includes/shortcodes-widgets.php';
 
 // Activation/Deactivation hooks
 register_activation_hook(__FILE__, ['CSport_Live_Foot', 'activate']);
