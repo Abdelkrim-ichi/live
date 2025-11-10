@@ -59,6 +59,8 @@
         isLoading: false,
       }
 
+      ensureDashboardSkeleton($content)
+
       const seasons = normalizeSeasons(config)
       initSeasonSelector($root, seasons, config, state, () => {
         state.cache = {}
@@ -309,6 +311,41 @@ function find(root, selector) {
     return found.length ? found.get(0) : null
   }
   return root.querySelector(selector)
+}
+
+function ensureDashboardSkeleton($content) {
+  if (!$content || !$content.length) return
+  if ($content.children('.cslf-dashboard-skeleton').length) return
+  $content.prepend(buildDashboardSkeleton())
+}
+
+function buildDashboardSkeleton() {
+  const template = `
+    <div class="cslf-dashboard-skeleton" aria-hidden="true">
+      ${Array.from({ length: 3 })
+        .map(
+          () => `
+        <section class="cslf-skeleton-section">
+          <div class="cslf-skeleton-line is-lg"></div>
+          <div class="cslf-skeleton-card">
+            <div class="cslf-skeleton-row">
+              <div class="cslf-skeleton-line is-sm"></div>
+              <div class="cslf-skeleton-line is-sm"></div>
+            </div>
+            <div class="cslf-skeleton-line"></div>
+            <div class="cslf-skeleton-line"></div>
+          </div>
+          <div class="cslf-skeleton-card">
+            <div class="cslf-skeleton-line is-sm"></div>
+            <div class="cslf-skeleton-line"></div>
+            <div class="cslf-skeleton-line"></div>
+          </div>
+        </section>`
+        )
+        .join('')}
+    </div>
+  `
+  return $(template)
 }
 
 function updateSeasonBadge($root, season) {

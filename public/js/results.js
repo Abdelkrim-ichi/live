@@ -506,6 +506,7 @@
     }
 
     let LAST = []
+    let hasInitialData = false
     function populateSelect(list) {
       // FILTRE: seulement les compétitions autorisées
       const allowedList = filterAllowedMatches(list)
@@ -635,6 +636,39 @@
       updateNav()
     }
 
+    function showRailSkeleton() {
+      if (!rail) return
+      root.addClass('is-loading')
+      rail.classList.add('is-loading')
+      empty.hide()
+      errorB.hide()
+      rail.innerHTML = ''
+      const frag = d.createDocumentFragment()
+      const count = Math.max(3, Math.ceil((rail.clientWidth || 600) / 220))
+      for (let i = 0; i < count; i++) {
+        const block = d.createElement('div')
+        block.className = 'cslf-league-block cslf-skeleton-placeholder'
+        block.innerHTML = `
+          <div class="cslf-skeleton-line is-lg"></div>
+          <div class="cslf-skeleton-line is-sm"></div>
+          <div class="cslf-skeleton-card">
+            <div class="cslf-skeleton-line"></div>
+            <div class="cslf-skeleton-line"></div>
+            <div class="cslf-skeleton-line is-sm"></div>
+          </div>
+        `
+        frag.appendChild(block)
+      }
+      rail.appendChild(frag)
+      updateNav()
+    }
+
+    function hideRailSkeleton() {
+      if (!rail) return
+      root.removeClass('is-loading')
+      rail.classList.remove('is-loading')
+    }
+
     function buildLeagueUrl(group) {
       const base = (C.leagueUrl || "").trim()
       if (!base) return "#"
@@ -690,9 +724,13 @@
     function fetchToday() {
       const baseQ = `date=${encodeURIComponent(TODAY)}&timezone=${encodeURIComponent(C.timezone || "UTC")}`
       const q = baseQ
+      if (!hasInitialData) {
+        showRailSkeleton()
+      }
       api("fixtures", q)
         .done((p) => {
           if (!p || !p.success) {
+            hideRailSkeleton()
             errorB.show().text("Erreur API")
             return
           }
@@ -700,6 +738,8 @@
           
           // FILTRE APPLIQUÉ ICI : seulement les compétitions autorisées
           LAST = arr
+          hideRailSkeleton()
+          hasInitialData = true
           populateSelect(LAST)
           renderRail(LAST)
           const next = calcNextInterval(filterAllowedMatches(LAST))
@@ -707,6 +747,7 @@
           scheduleNext(next)
         })
         .fail((xhr, s, e) => {
+          hideRailSkeleton()
           errorB.show().text(`Erreur API: ${xhr.status} ${e || s}`)
           scheduleNext(3 * 60 * 1000)
         })

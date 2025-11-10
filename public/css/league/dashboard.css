@@ -74,6 +74,9 @@
   font-size:12px;
   color:var(--muted);
 }
+.cslf-season-select.is-hidden {
+  display:none!important;
+}
 .cslf-season-select span {
   display:none;
 }
@@ -358,6 +361,61 @@
   font-size:16px;
   font-weight:600;
   color:#f8fafc !important;
+}
+
+@keyframes cslf-shimmer {
+  0% { background-position:-200% 0; }
+  100% { background-position:200% 0; }
+}
+
+.cslf-dashboard-skeleton {
+  position:absolute;
+  inset:0;
+  display:none;
+  flex-direction:column;
+  gap:16px;
+  padding:18px;
+  background:rgba(15,23,42,0.82);
+  z-index:5;
+  pointer-events:none;
+}
+.cslf-league-content.is-loading .cslf-dashboard-skeleton{
+  display:flex;
+}
+.cslf-skeleton-section{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.cslf-skeleton-card{
+  background:rgba(15,23,42,0.38);
+  border:1px solid rgba(148,163,184,0.14);
+  border-radius:12px;
+  padding:14px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.cslf-skeleton-row{
+  display:flex;
+  gap:10px;
+}
+.cslf-skeleton-line{
+  flex:1;
+  height:12px;
+  border-radius:999px;
+  background:linear-gradient(90deg, rgba(71,85,105,0.25), rgba(148,163,184,0.45), rgba(71,85,105,0.25));
+  background-size:200% 100%;
+  animation:cslf-shimmer 1.6s ease-in-out infinite;
+  opacity:.85;
+}
+.cslf-skeleton-line.is-sm{
+  height:10px;
+  flex:0 0 35%;
+}
+.cslf-skeleton-line.is-lg{
+  height:16px;
+  flex:0 0 55%;
 }
 .cslf-league-matchlist {
   display:flex;
