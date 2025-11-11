@@ -1,8 +1,70 @@
 ;(function (w, d) {
   if (!w || !d) return
   const core = w.CSLF_WIDGET_CORE || {}
-  const ajaxurl = core.ajaxurl || (w.ajaxurl ? w.ajaxurl : '')
   const nonce = core.nonce || ''
+  const widgetCache = (w.CSLF_WIDGET_CACHE = w.CSLF_WIDGET_CACHE || new Map())
+  const widgetFetch = (w.CSLF_WIDGET_REQUEST = w.CSLF_WIDGET_REQUEST || {})
+
+  if (typeof widgetFetch.get !== 'function') {
+    widgetFetch.get = function getWidgetData(coreOptions, tab, params = {}) {
+      const url =
+        coreOptions?.ajaxurl || w.CSLF_WIDGET_CORE?.ajaxurl || w.ajaxurl || ''
+      if (!url) {
+        return Promise.reject(new Error('ajaxurl manquant'))
+      }
+      const nonceValue =
+        coreOptions?.nonce || w.CSLF_WIDGET_CORE?.nonce || nonce || ''
+      const key = JSON.stringify({
+        tab,
+        params,
+      })
+
+      if (!widgetCache.has(key)) {
+        const payload = new FormData()
+        payload.append('action', 'cslf_league_api')
+        payload.append('tab', tab)
+        Object.entries(params || {}).forEach(([k, v]) => {
+          if (v !== undefined && v !== null && v !== '') {
+            payload.append(k, v)
+          }
+        })
+        if (nonceValue) payload.append('_wpnonce', nonceValue)
+
+        const request = fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          body: payload,
+        })
+          .then((res) => {
+            if (!res.ok) {
+              throw new Error(`HTTP ${res.status}`)
+            }
+            return res.json()
+          })
+          .then((json) => {
+            if (!json || !json.success) {
+              const message =
+                json?.data?.message ||
+                json?.message ||
+                coreOptions?.i18n?.error ||
+                'Erreur'
+              throw new Error(message)
+            }
+            return json.data || {}
+          })
+          .catch((err) => {
+            widgetCache.delete(key)
+            throw err
+          })
+
+        widgetCache.set(key, request)
+      }
+
+      return widgetCache.get(key)
+    }
+  }
+
+  const requestWidgetData = widgetFetch.get.bind(null, core)
 
   function ready(fn) {
     if (d.readyState !== 'loading') fn()
@@ -33,27 +95,17 @@
     const errorEl = root.querySelector('.cslf-widget-error')
 
     toggleLoading(true)
-    const payload = new FormData()
-    payload.append('action', 'cslf_league_api')
-    payload.append('tab', 'widget_scorers')
-    payload.append('league_id', config.league_id)
-    if (config.season) payload.append('season', config.season)
-    payload.append('limit', config.limit || 10)
-    if (nonce) payload.append('_wpnonce', nonce)
-
-    fetch(ajaxurl, {
-      method: 'POST',
-      credentials: 'same-origin',
-      body: payload,
+    requestWidgetData('widget_scorers', {
+      league_id: config.league_id,
+      season: config.season || '',
+      limit: config.limit || 10,
     })
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json || !json.success) {
-          throw new Error(json?.data?.message || core.i18n?.error || 'Erreur')
-        }
-        render(root, json.data || {}, config)
+      .then((data) => {
+        render(root, data || {}, config)
       })
-      .catch((err) => showError(root, err.message || core.i18n?.error || 'Erreur'))
+      .catch((err) => {
+        showError(root, err?.message || core.i18n?.error || 'Erreur')
+      })
       .finally(() => toggleLoading(false))
 
     function toggleLoading(state) {

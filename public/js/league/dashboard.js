@@ -1,4 +1,138 @@
 (function (w, d, $) {
+  const globalCache = (w.CSLF_LEAGUE_HTTP_CACHE =
+    w.CSLF_LEAGUE_HTTP_CACHE || new Map())
+  const globalFetch = (w.CSLF_LEAGUE_FETCH = w.CSLF_LEAGUE_FETCH || {})
+  const refreshNonce =
+    (w.CSLF_REFRESH_NONCE =
+      w.CSLF_REFRESH_NONCE ||
+      (() => {
+        const pending = new Map()
+        return function refreshNonce(baseUrl) {
+          const ajax =
+            baseUrl ||
+            (w.CSLF_LEAGUE_CORE && w.CSLF_LEAGUE_CORE.ajaxurl) ||
+            (w.CSLF_WIDGET_CORE && w.CSLF_WIDGET_CORE.ajaxurl) ||
+            w.ajaxurl ||
+            ''
+          if (!ajax) return Promise.resolve(null)
+          const url =
+            ajax.indexOf('?') === -1
+              ? `${ajax}?action=lf_get_nonce`
+              : `${ajax}&action=lf_get_nonce`
+          if (pending.has(url)) return pending.get(url)
+          const promise = fetch(url, { credentials: 'same-origin' })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((json) => (json && json.nonce ? json.nonce : null))
+            .catch(() => null)
+            .finally(() => pending.delete(url))
+          pending.set(url, promise)
+          return promise
+        }
+      })())
+
+  if (typeof globalFetch.getTabData !== 'function') {
+    globalFetch.getTabData = function getTabData(cfg, tab, extra = {}) {
+      const core = w.CSLF_LEAGUE_CORE || {}
+      const leagueId = cfg?.league_id
+      if (!leagueId) {
+        return Promise.reject(new Error('league_id requis'))
+      }
+      const season = cfg?.season
+      const ajaxurl = cfg?.ajaxurl || core.ajaxurl
+      const key = JSON.stringify({
+        league: leagueId,
+        season: season || '',
+        tab,
+        extra,
+      })
+      const buildError = (source) => {
+        if (source instanceof Error) return source
+        const message =
+          source?.responseJSON?.data?.message ||
+          source?.responseJSON?.message ||
+          source?.statusText ||
+          core?.i18n?.error ||
+          'Erreur'
+        const error = new Error(message)
+        if (source && typeof source.status === 'number') {
+          error.status = source.status
+        }
+        return error
+      }
+
+      if (!globalCache.has(key)) {
+        const perform = (attempt = 0) =>
+          new Promise((resolve, reject) => {
+            const nonceValue =
+              cfg?._wpnonce ||
+              cfg?.nonce ||
+              core.nonce ||
+              core?._wpnonce ||
+              ''
+            const payload = Object.assign(
+              {
+                action: 'cslf_league_api',
+                tab,
+                league_id: leagueId,
+                season,
+                _wpnonce: nonceValue,
+              },
+              extra || {}
+            )
+
+            $.ajax({
+              url: ajaxurl,
+              method: 'POST',
+              dataType: 'json',
+              data: payload,
+            })
+              .done((resp) => {
+                if (resp && resp.success) {
+                  resolve(resp.data)
+                  return
+                }
+                reject(
+                  new Error(
+                    resp?.data?.message ||
+                      resp?.message ||
+                      core?.i18n?.error ||
+                      'Erreur'
+                  )
+                )
+              })
+              .fail((xhr) => {
+                if (xhr?.status === 403 && attempt === 0) {
+                  refreshNonce(ajaxurl)
+                    .then((fresh) => {
+                      if (fresh) {
+                        cfg._wpnonce = fresh
+                        if (core) core.nonce = fresh
+                        perform(attempt + 1).then(resolve).catch(reject)
+                      } else {
+                        reject(buildError(xhr))
+                      }
+                    })
+                    .catch(() => reject(buildError(xhr)))
+                  return
+                }
+                reject(buildError(xhr))
+              })
+          })
+
+        const request = perform().catch((err) => {
+          globalCache.delete(key)
+          throw err
+        })
+
+        globalCache.set(key, request)
+      }
+
+      return globalCache.get(key)
+    }
+  }
+
+  const getTabData = globalFetch.getTabData
+
   function ready(fn) {
     if ($ && typeof $ === 'function') {
       $(fn)
@@ -131,32 +265,18 @@
         })
       }
 
-      function fetchTab(tab) {
+      function fetchTab(tab, extra = {}) {
         setLoading(true)
-        $.ajax({
-          url: CSLF_LEAGUE_CORE.ajaxurl,
-          method: 'POST',
-          dataType: 'json',
-          data: {
-            action: 'cslf_league_api',
-            tab,
-            league_id: config.league_id,
-            season: config.season,
-            _wpnonce: CSLF_LEAGUE_CORE.nonce,
-          },
-        })
-          .done((resp) => {
-            if (resp && resp.success) {
-              state.cache[tab] = resp.data
-              render(tab, resp.data)
-            } else {
-              renderError(resp?.data?.message || resp?.message)
-            }
+        getTabData(config, tab, extra)
+          .then((payload) => {
+            state.cache[tab] = payload
+            render(tab, payload)
           })
-          .fail((xhr) => {
+          .catch((err) => {
             renderError(
-              xhr?.responseJSON?.data?.message ||
+              err?.message ||
                 CSLF_LEAGUE_CORE?.i18n?.error ||
+                CSLF_LEAGUE_CORE?.error ||
                 'Erreur'
             )
           })

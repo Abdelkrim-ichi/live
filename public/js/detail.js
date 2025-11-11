@@ -4,6 +4,7 @@
     const C = w.CSLF_DETAIL||{};
     const root = $('#'+C.instanceId);
     const TZ   = C.timezone || 'UTC';
+    const DISABLE_DETAIL_API = true;
 
     const qs = new URLSearchParams(location.search);
     const FIXTURE_ID = parseInt(qs.get('fixture'),10);
@@ -11,6 +12,9 @@
     const el = (id)=> root.find('#'+id)[0];
 
     function api(path, query){
+      if (DISABLE_DETAIL_API) {
+        return $.Deferred().resolve({ success: true, data: { response: [] } }).promise();
+      }
       return $.ajax({
         url: C.ajaxurl, method:'POST', dataType:'json', timeout:15000,
         data: { action:'cslf_api', endpoint:'proxy', _wpnonce:C.nonce, path, query }
@@ -487,6 +491,9 @@
     function isLive(short){ return ["1H","HT","2H","ET","BT","P"].includes(String(short||"").toUpperCase()); }
 
     function loadAll(){
+      if (DISABLE_DETAIL_API) {
+        return;
+      }
       $.when(
         get('fixtures',            'id='+FIXTURE_ID),
         get('fixtures/events',     'fixture='+FIXTURE_ID),
@@ -522,6 +529,8 @@
       get('fixtures/headtohead', `h2h=${LOCAL.fx.teams.home.id}-${LOCAL.fx.teams.away.id}&last=10`).done(d=>{ LOCAL.h2h=d; renderH2H(d, LOCAL.fx); });
     }
 
-    loadAll();
+    if (!DISABLE_DETAIL_API) {
+      loadAll();
+    }
   });
 })(window, document, window.jQuery);

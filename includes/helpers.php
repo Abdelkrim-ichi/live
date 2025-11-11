@@ -16,6 +16,63 @@ if (!function_exists('cslf_check_rate_limit')) {
 if (!defined('ABSPATH')) exit;
 
 if (!defined('CSLF_API_BASE')) define('CSLF_API_BASE', 'https://v3.football.api-sports.io');
+if (!defined('CSLF_DAILY_QUOTA')) define('CSLF_DAILY_QUOTA', 7000);
+
+function cslf_quota_option_key() {
+    return 'cslf_quota_state';
+}
+
+function cslf_quota_get_state() {
+    $state = get_option(cslf_quota_option_key(), []);
+    if (!is_array($state)) {
+        $state = [];
+    }
+    $today = current_time('Y-m-d');
+    if (!isset($state['date']) || $state['date'] !== $today) {
+        $state = [
+            'date'  => $today,
+            'count' => 0,
+            'log'   => [],
+        ];
+        update_option(cslf_quota_option_key(), $state, false);
+    }
+    return $state;
+}
+
+function cslf_quota_store_state(array $state) {
+    update_option(cslf_quota_option_key(), $state, false);
+}
+
+function cslf_quota_remaining() {
+    $state = cslf_quota_get_state();
+    $used = isset($state['count']) ? (int)$state['count'] : 0;
+    $remaining = (int)CSLF_DAILY_QUOTA - $used;
+    return $remaining > 0 ? $remaining : 0;
+}
+
+function cslf_quota_reserve($endpoint, $cost = 1) {
+    $cost = max(1, (int)$cost);
+    $state = cslf_quota_get_state();
+    $used = isset($state['count']) ? (int)$state['count'] : 0;
+    if ($used + $cost > (int)CSLF_DAILY_QUOTA) {
+        return false;
+    }
+    $state['count'] = $used + $cost;
+    $key = sanitize_key(str_replace('/', '_', $endpoint));
+    if (!isset($state['log']) || !is_array($state['log'])) {
+        $state['log'] = [];
+    }
+    $allowed_tracking = [
+        'fixtures/events',
+        'fixtures/lineups',
+    ];
+
+    if (!in_array($endpoint, $allowed_tracking, true)) {
+        $state['log'][$key] = isset($state['log'][$key]) ? (int)$state['log'][$key] + $cost : $cost;
+        cslf_quota_store_state($state);
+    }
+    return true;
+}
 
 /**
  * Get plugin options merged with defaults.
@@ -126,6 +183,18 @@ function cslf_cached_get($path, $query = [], $ttl = null) {
 
     $base = trailingslashit(CSLF_API_BASE);
     $url  = add_query_arg($query, $base.$p);
+    $disabled_paths = ['fixtures/events', 'fixtures/lineups'];
+    if (in_array($p, $disabled_paths, true)) {
+        delete_transient($lockKey);
+        return ['ok'=>false,'error'=>'Endpoint disabled temporarily'];
+    }
+
+    if (!cslf_quota_reserve($p)) {
+        delete_transient($lockKey);
+        $stale = get_option($staleKey,false);
+        return $stale!==false ? $stale : ['ok'=>false,'error'=>'Daily quota exceeded'];
+    }
+
     $resp = wp_remote_get($url, ['timeout'=>15,'headers'=>['x-apisports-key'=>$api_key,'Accept'=>'application/json']]);
     if (is_wp_error($resp)) { $stale=get_option($staleKey,false); return $stale!==false?$stale:['ok'=>false,'error'=>'HTTP Error: '.$resp->get_error_message()]; }
 

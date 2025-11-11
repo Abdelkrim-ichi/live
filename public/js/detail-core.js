@@ -9,6 +9,8 @@
     })
   })
 
+  const DISABLE_DETAIL_API = true
+
   function boot(node) {
     var inst = C.fromNode(node)
     var cache = { fx: null, events: null, stats: null, lineups: null, info: null }
@@ -53,6 +55,9 @@
     var lastIntervalSec = 60
     function loadCore() {
       clearTimeout(refreshTimer)
+      if (DISABLE_DETAIL_API) {
+        return
+      }
       var fixtureId = new URLSearchParams(w.location.search).get("fixture")
       if (!fixtureId) {
         return;
@@ -265,6 +270,8 @@
     }
 
     // Kick it off
-    loadCore()
+    if (!DISABLE_DETAIL_API) {
+      loadCore()
+    }
   }
 })(window, document, window.jQuery)

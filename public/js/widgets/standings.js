@@ -1,8 +1,114 @@
 ;(function (w, d) {
     if (!w || !d) return
-    const core = w.CSLF_WIDGET_CORE || {}
-    const ajaxurl = core.ajaxurl || (w.ajaxurl ? w.ajaxurl : '')
-    const nonce = core.nonce || ''
+  const core = w.CSLF_WIDGET_CORE || {}
+  const nonce = core.nonce || ''
+  const widgetCache = (w.CSLF_WIDGET_CACHE = w.CSLF_WIDGET_CACHE || new Map())
+  const widgetFetch = (w.CSLF_WIDGET_REQUEST = w.CSLF_WIDGET_REQUEST || {})
+  const refreshNonce =
+    (w.CSLF_REFRESH_NONCE =
+      w.CSLF_REFRESH_NONCE ||
+      (() => {
+        const pending = new Map()
+        return function refreshNonce(baseUrl) {
+          const ajax =
+            baseUrl ||
+            (w.CSLF_LEAGUE_CORE && w.CSLF_LEAGUE_CORE.ajaxurl) ||
+            (w.CSLF_WIDGET_CORE && w.CSLF_WIDGET_CORE.ajaxurl) ||
+            w.ajaxurl ||
+            ''
+          if (!ajax) return Promise.resolve(null)
+          const url =
+            ajax.indexOf('?') === -1
+              ? `${ajax}?action=lf_get_nonce`
+              : `${ajax}&action=lf_get_nonce`
+          if (pending.has(url)) return pending.get(url)
+          const promise = fetch(url, { credentials: 'same-origin' })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((json) => (json && json.nonce ? json.nonce : null))
+            .catch(() => null)
+            .finally(() => pending.delete(url))
+          pending.set(url, promise)
+          return promise
+        }
+      })())
+
+  if (typeof widgetFetch.get !== 'function') {
+    widgetFetch.get = function getWidgetData(coreOptions, tab, params = {}) {
+      const url =
+        coreOptions?.ajaxurl || w.CSLF_WIDGET_CORE?.ajaxurl || w.ajaxurl || ''
+      if (!url) {
+        return Promise.reject(new Error('ajaxurl manquant'))
+      }
+      const key = JSON.stringify({
+        tab,
+        params,
+      })
+
+      if (!widgetCache.has(key)) {
+        const perform = (attempt = 0) => {
+          const nonceValue =
+            coreOptions?.nonce || w.CSLF_WIDGET_CORE?.nonce || nonce || ''
+          const payload = new FormData()
+          payload.append('action', 'cslf_league_api')
+          payload.append('tab', tab)
+          Object.entries(params || {}).forEach(([k, v]) => {
+            if (v !== undefined && v !== null && v !== '') {
+              payload.append(k, v)
+            }
+          })
+          if (nonceValue) payload.append('_wpnonce', nonceValue)
+
+          return fetch(url, {
+            method: 'POST',
+            credentials: 'same-origin',
+            body: payload,
+          })
+            .then((res) => {
+              if (res.status === 403 && attempt === 0) {
+                return refreshNonce(url).then((fresh) => {
+                  if (fresh) {
+                    coreOptions.nonce = fresh
+                    if (w.CSLF_WIDGET_CORE) w.CSLF_WIDGET_CORE.nonce = fresh
+                    return perform(attempt + 1)
+                  }
+                  const error = new Error('HTTP 403')
+                  error.status = 403
+                  throw error
+                })
+              }
+              if (!res.ok) {
+                const error = new Error(`HTTP ${res.status}`)
+                error.status = res.status
+                throw error
+              }
+              return res.json()
+            })
+            .then((json) => {
+              if (!json || !json.success) {
+                const message =
+                  json?.data?.message ||
+                  json?.message ||
+                  coreOptions?.i18n?.error ||
+                  'Erreur'
+                throw new Error(message)
+              }
+              return json.data || {}
+            })
+        }
+
+        const request = perform().catch((err) => {
+          widgetCache.delete(key)
+          throw err
+        })
+
+        widgetCache.set(key, request)
+      }
+
+      return widgetCache.get(key)
+    }
+  }
+
+  const requestWidgetData = widgetFetch.get.bind(null, core)
   
     function ready(fn) {
       if (d.readyState !== 'loading') fn()
@@ -33,28 +139,18 @@
       const errorEl = root.querySelector('.cslf-widget-error')
   
       toggleLoading(true)
-      const payload = new FormData()
-      payload.append('action', 'cslf_league_api')
-      payload.append('tab', 'widget_standings')
-      payload.append('league_id', config.league_id)
-      if (config.season) payload.append('season', config.season)
-      payload.append('limit', config.limit || 10)
-      if (nonce) payload.append('_wpnonce', nonce)
-  
-      fetch(ajaxurl, {
-        method: 'POST',
-        credentials: 'same-origin',
-        body: payload,
+    requestWidgetData('widget_standings', {
+      league_id: config.league_id,
+      season: config.season || '',
+      limit: config.limit || 10,
+    })
+      .then((data) => {
+        render(root, data || {}, config)
       })
-        .then((res) => res.json())
-        .then((json) => {
-          if (!json || !json.success) {
-            throw new Error(json?.data?.message || core.i18n?.error || 'Erreur')
-          }
-          render(root, json.data || {}, config)
-        })
-        .catch((err) => showError(root, err.message || core.i18n?.error || 'Erreur'))
-        .finally(() => toggleLoading(false))
+      .catch((err) => {
+        showError(root, err?.message || core.i18n?.error || 'Erreur')
+      })
+      .finally(() => toggleLoading(false))
   
       function toggleLoading(state) {
         if (shell) shell.classList.toggle('is-loading', !!state)

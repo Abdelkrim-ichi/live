@@ -316,10 +316,12 @@ class CSport_Live_Foot {
                         continue; // Skip invalid IDs
                     }
                     
-                    $lineups = cslf_cached_get('/fixtures/lineups', ['fixture' => $fid], $ttl_det);
                     $stats   = cslf_cached_get('/fixtures/statistics', ['fixture' => $fid], $ttl_det);
-                    $events  = cslf_cached_get('/fixtures/events', ['fixture' => $fid], $ttl_det);
-                    $bundle[$fid] = ['lineups' => $lineups, 'stats' => $stats, 'events' => $events];
+                    $bundle[$fid] = [
+                        'lineups' => ['response' => []],
+                        'stats'   => $stats,
+                        'events'  => ['response' => []],
+                    ];
                 }
                 wp_send_json(['ok' => true, 'bundle' => $bundle]);
                 break;
@@ -392,9 +394,7 @@ class CSport_Live_Foot {
         foreach ($ids as $fid) {
             if ($fid <= 0) continue;
             
-            cslf_cached_get('/fixtures/lineups', ['fixture' => $fid], $ttl_det);
             cslf_cached_get('/fixtures/statistics', ['fixture' => $fid], $ttl_det);
-            cslf_cached_get('/fixtures/events', ['fixture' => $fid], $ttl_det);
             
             usleep(500000); // 0.5 second delay
         }

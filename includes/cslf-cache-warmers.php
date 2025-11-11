@@ -90,19 +90,11 @@ add_action('cslf_warm_details_minutely', function(){
   }
   
   foreach ($hot as $fxId){
-    cslf_cached_get('fixtures/events', ['fixture'=>$fxId], CSLF_TTL_EVENTS);
-    sleep(1); // 1 second delay
-    
     cslf_cached_get('fixtures/statistics', ['fixture'=>$fxId], CSLF_TTL_STATS);
     sleep(1); // 1 second delay
     
     cslf_cached_get('fixtures/players', ['fixture'=>$fxId], CSLF_TTL_PLAYERS);
     sleep(1); // 1 second delay
-
-    // Lineups are slow-changing: only refresh if missing/stale
-    if (false === cslf_cache_peek('fixtures/lineups', ['fixture'=>$fxId])) {
-      cslf_cached_get('fixtures/lineups', ['fixture'=>$fxId], CSLF_TTL_LINEUPS);
-    }
   }
   
   delete_transient('cslf_details_cron_running');

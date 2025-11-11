@@ -634,48 +634,15 @@ function cslf_live_foot_results_shortcode($atts){
           '<div><strong>Saison:</strong> '+(fx.league?.season||'')+'</div>'
         ].join(''));
 
-        // 2) Events (for résumé + fil)
-        apiProxy('fixtures/events', 'fixture='+FIXTURE_ID)
-          .done(function(ep){
-            const evs = ep?.data?.response || [];
-            const $last = $('#last-events-<?php echo $id; ?>').empty();
-            const $all  = $('#events-<?php echo $id; ?>').empty();
-            evs.slice(-5).reverse().forEach(e=>{
-              $last.append(`<div class="event"><strong>${e.time?.elapsed||''}'</strong> ${e.team?.name||''} — ${e.type||''} ${e.detail?('('+e.detail+')'):''} ${e.player?.name?('· '+e.player.name):''}</div>`);
-            });
-            evs.forEach(e=>{
-              $all.append(`<div class="event"><strong>${e.time?.elapsed||''}'</strong> ${e.team?.name||''} — ${e.type||''} ${e.detail?('('+e.detail+')'):''} ${e.player?.name?('· '+e.player.name):''}</div>`);
-            });
-          });
+        // 2) Events (temporarily disabled)
+        $('#last-events-<?php echo $id; ?>').html('<div class="event muted">Historique des événements momentanément indisponible.</div>');
+        $('#events-<?php echo $id; ?>').html('<div class="event muted">Historique des événements momentanément indisponible.</div>');
 
-        // 3) Lineups (and basic pitch placement using grid positions)
-        apiProxy('fixtures/lineups', 'fixture='+FIXTURE_ID)
-          .done(function(lp){
-            const L = lp?.data?.response || [];
-            const H = L.find(x=>x.team?.id === fx.teams?.home?.id);
-            const A = L.find(x=>x.team?.id === fx.teams?.away?.id);
-
-            if(H){
-              $('#home-coach-<?php echo $id; ?>').text((fx.teams?.home?.name||'')+' — '+(H.coach?.name||'')+' · '+(H.formation||''));
-              const $z = $('#home-pitch-<?php echo $id; ?>').empty();
-              (H.startXI||[]).forEach(p=>{
-                const it = p.player||{};
-                const d = document.createElement('div');
-                d.className = 'player'; d.textContent = (it.number||'')+' '+(it.name||'');
-                $z.append(d);
-              });
-            }
-            if(A){
-              $('#away-coach-<?php echo $id; ?>').text((fx.teams?.away?.name||'')+' — '+(A.coach?.name||'')+' · '+(A.formation||''));
-              const $z = $('#away-pitch-<?php echo $id; ?>').empty();
-              (A.startXI||[]).forEach(p=>{
-                const it = p.player||{};
-                const d = document.createElement('div');
-                d.className = 'player'; d.textContent = (it.number||'')+' '+(it.name||'');
-                $z.append(d);
-              });
-            }
-          });
+        // 3) Lineups (temporarily disabled)
+        $('#home-coach-<?php echo $id; ?>').text((fx.teams?.home?.name||'')+' — Compositions indisponibles');
+        $('#away-coach-<?php echo $id; ?>').text((fx.teams?.away?.name||'')+' — Compositions indisponibles');
+        $('#home-pitch-<?php echo $id; ?>').html('<div class="muted">Compositions non chargées pour le moment.</div>');
+        $('#away-pitch-<?php echo $id; ?>').html('<div class="muted">Compositions non chargées pour le moment.</div>');
 
         // 4) Stats
         apiProxy('fixtures/statistics', 'fixture='+FIXTURE_ID).done(function(sp){

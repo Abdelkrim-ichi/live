@@ -495,14 +495,75 @@
       return [label, null]
     }
 
+    const requestCache = new Map()
+    const refreshNonce =
+      (w.CSLF_REFRESH_NONCE =
+        w.CSLF_REFRESH_NONCE ||
+        (() => {
+          const pending = new Map()
+          return function refreshNonce(baseUrl) {
+            const ajax =
+              baseUrl ||
+              (w.CSLF_LEAGUE_CORE && w.CSLF_LEAGUE_CORE.ajaxurl) ||
+              (w.CSLF_WIDGET_CORE && w.CSLF_WIDGET_CORE.ajaxurl) ||
+              w.ajaxurl ||
+              ''
+            if (!ajax) return Promise.resolve(null)
+            const url =
+              ajax.indexOf('?') === -1
+                ? `${ajax}?action=lf_get_nonce`
+                : `${ajax}&action=lf_get_nonce`
+            if (pending.has(url)) return pending.get(url)
+            const promise = fetch(url, { credentials: 'same-origin' })
+              .then((res) => (res.ok ? res.json() : null))
+              .then((json) => (json && json.nonce ? json.nonce : null))
+              .catch(() => null)
+              .finally(() => pending.delete(url))
+            pending.set(url, promise)
+            return promise
+          }
+        })())
+
     function api(path, query) {
-      return $.ajax({
-        url: C.ajaxurl,
-        method: "POST",
-        dataType: "json",
-        timeout: 15000,
-        data: { action: "cslf_api", endpoint: "proxy", _wpnonce: C.nonce, path, query },
-      })
+      const key = `${path}|${query || ''}`
+      if (requestCache.has(key)) {
+        return requestCache.get(key)
+      }
+
+      const deferred = $.Deferred()
+      const perform = (attempt = 0) => {
+        $.ajax({
+          url: C.ajaxurl,
+          method: "POST",
+          dataType: "json",
+          timeout: 15000,
+          data: { action: "cslf_api", endpoint: "proxy", _wpnonce: C.nonce, path, query },
+        })
+          .done((resp) => deferred.resolve(resp))
+          .fail((xhr, status, errorText) => {
+            if (xhr?.status === 403 && attempt === 0) {
+              refreshNonce(C.ajaxurl)
+                .then((fresh) => {
+                  if (fresh) {
+                    C.nonce = fresh
+                    perform(attempt + 1)
+                  } else {
+                    deferred.reject(xhr, status, errorText)
+                  }
+                })
+                .catch(() => deferred.reject(xhr, status, errorText))
+              return
+            }
+            deferred.reject(xhr, status, errorText)
+          })
+      }
+
+      perform()
+
+      const promise = deferred.promise()
+      promise.always(() => requestCache.delete(key))
+      requestCache.set(key, promise)
+      return promise
     }
 
     let LAST = []

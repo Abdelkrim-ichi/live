@@ -2,6 +2,7 @@
   // Declare the CSLF variable to avoid undeclared variable errors
   const CSLF = window.CSLF
   if (!CSLF) return
+  const DISABLE_LIVE_API = true
   const LIVE_MS = Number.parseInt(CSLF.ttl_live_ms || 20000, 10)
   const DET_MS = Number.parseInt(CSLF.ttl_det_ms || 60000, 10)
   let lastBundleAt = 0
@@ -15,6 +16,9 @@
   }
 
   function api(endpoint, data) {
+    if (DISABLE_LIVE_API) {
+      return $.Deferred().resolve({}).promise()
+    }
     return $.ajax({
       url: CSLF.ajaxurl,
       method: "POST",
@@ -80,6 +84,9 @@
   }
 
   function tick($root) {
+    if (DISABLE_LIVE_API) {
+      return
+    }
     api("live")
       .done((res) => {
         errorCount = 0
@@ -148,7 +155,9 @@
   $(() => {
     $(".cslf-live-widget").each(function () {
       const $root = $(this)
-      tick($root)
+      if (!DISABLE_LIVE_API) {
+        tick($root)
+      }
 
       const getInterval = () => {
         if (errorCount >= maxErrors) return LIVE_MS * 5 // Slow down on repeated errors
@@ -158,7 +167,9 @@
 
       const scheduleNext = () => {
         setTimeout(() => {
-          tick($root)
+          if (!DISABLE_LIVE_API) {
+            tick($root)
+          }
           scheduleNext()
         }, getInterval())
       }

@@ -1,4 +1,68 @@
 (function (w) {
+  const globalCache = (w.CSLF_LEAGUE_HTTP_CACHE =
+    w.CSLF_LEAGUE_HTTP_CACHE || new Map())
+  const globalFetch = (w.CSLF_LEAGUE_FETCH = w.CSLF_LEAGUE_FETCH || {})
+
+  if (typeof globalFetch.getTabData !== 'function') {
+    globalFetch.getTabData = function getTabData(cfg, tab, extra = {}) {
+      const core = w.CSLF_LEAGUE_CORE || {}
+      const leagueId = cfg?.league_id
+      if (!leagueId) {
+        return Promise.reject(new Error('league_id requis'))
+      }
+      const season = cfg?.season
+      const ajaxurl = cfg?.ajaxurl || core.ajaxurl
+      const nonce =
+        cfg?._wpnonce || cfg?.nonce || core.nonce || core?._wpnonce || ''
+      const key = JSON.stringify({
+        league: leagueId,
+        season: season || '',
+        tab,
+        extra,
+      })
+      if (!globalCache.has(key)) {
+        const payload = Object.assign(
+          {
+            action: 'cslf_league_api',
+            tab,
+            league_id: leagueId,
+            season,
+            _wpnonce: nonce,
+          },
+          extra || {}
+        )
+        const request = w.jQuery
+          .ajax({
+            url: ajaxurl,
+            method: 'POST',
+            dataType: 'json',
+            data: payload,
+          })
+          .then((resp) => {
+            if (resp && resp.success) {
+              return resp.data
+            }
+            const message =
+              resp?.data?.message ||
+              resp?.message ||
+              core?.i18n?.error ||
+              'Erreur'
+            throw new Error(message)
+          })
+          .catch((err) => {
+            globalCache.delete(key)
+            throw err instanceof Error ? err : new Error(String(err || 'Erreur'))
+          })
+
+        globalCache.set(key, request)
+      }
+
+      return globalCache.get(key)
+    }
+  }
+
+  const getTabData = globalFetch.getTabData
+
   const ns = (w.CSLF_LEAGUE_TAB_HANDLERS =
     w.CSLF_LEAGUE_TAB_HANDLERS || {})
 
@@ -109,21 +173,8 @@
       setHTML(body, '<div class="cslf-league-empty">Chargement…</div>')
     }
 
-    $.ajax({
-      url: CSLF_LEAGUE_CORE.ajaxurl,
-      method: 'POST',
-      dataType: 'json',
-      data: {
-        action: 'cslf_league_api',
-        tab: 'matches',
-        league_id: config.league_id,
-        season: config.season,
-        round,
-        _wpnonce: CSLF_LEAGUE_CORE.nonce,
-      },
-    })
-      .done((resp) => {
-        const payload = resp?.data || {}
+    getTabData(config, 'matches', { round })
+      .then((payload = {}) => {
         state.round = payload.round || round
         state.rounds = payload.rounds || state.rounds
         state.fixtures = payload.fixtures || []
@@ -132,7 +183,7 @@
         if (select) populateRounds(select, state)
         renderBody(container.querySelector('.cslf-league-matches-body'), state)
       })
-      .fail(() => {
+      .catch(() => {
         if (body) {
           setHTML(
             body,
@@ -140,7 +191,7 @@
           )
         }
       })
-      .always(() => {
+      .finally(() => {
         state.loading = false
       })
   }
