@@ -622,17 +622,21 @@
       const allowedList = filterAllowedMatches(list)
       const grouped = groupLeagues(allowedList)
       const current = sel.length ? sel.val() || "all" : "all"
-      const visibleGroups = current === "all"
+    const visibleGroups =
+      current === "all"
         ? grouped
         : grouped.filter((g) => String(g.id) === String(current))
 
       const totalMatches = visibleGroups.reduce((sum, g) => sum + g.m.length, 0)
-      empty.toggle(totalMatches === 0)
-      rail.innerHTML = ""
-      if (!totalMatches) {
+      const hasData = totalMatches > 0
+      empty.toggle(!hasData)
+      root.toggleClass('is-empty', !hasData)
+      if (!hasData) {
+        rail.innerHTML = ""
         updateNav()
         return
       }
+      rail.innerHTML = ""
 
       const frag = d.createDocumentFragment()
       visibleGroups.forEach((G) => {
