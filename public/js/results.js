@@ -782,7 +782,37 @@
       POLL = setTimeout(fetchToday, ms)
     }
 
-    function fetchToday() {
+    let isFetching = false
+    let pendingInteractionRetry = false
+    let lastError = null
+    let interactionRetryHandler = null
+
+    function clearInteractionRetry() {
+      if (!pendingInteractionRetry) return
+      if (interactionRetryHandler) {
+        root.off('mousemove', interactionRetryHandler)
+        root.off('touchstart', interactionRetryHandler)
+        $(window).off('scroll', interactionRetryHandler)
+      }
+      pendingInteractionRetry = false
+      interactionRetryHandler = null
+    }
+
+    function armInteractionRetry() {
+      if (!lastError || pendingInteractionRetry) return
+      pendingInteractionRetry = true
+      interactionRetryHandler = () => {
+        clearInteractionRetry()
+        fetchToday(true)
+      }
+      root.on('mousemove', interactionRetryHandler)
+      root.on('touchstart', interactionRetryHandler)
+      $(window).on('scroll', interactionRetryHandler)
+    }
+
+    function fetchToday(isRetry) {
+      if (isFetching) return
+      isFetching = true
       const baseQ = `date=${encodeURIComponent(TODAY)}&timezone=${encodeURIComponent(C.timezone || "UTC")}`
       const q = baseQ
       if (!hasInitialData) {
@@ -790,9 +820,11 @@
       }
       api("fixtures", q)
         .done((p) => {
+          clearInteractionRetry()
+          lastError = null
           if (!p || !p.success) {
             hideRailSkeleton()
-            errorB.show().text("Erreur API")
+            errorB.hide()
             return
           }
           const arr = Array.isArray(p.data?.response) ? p.data.response : []
@@ -809,8 +841,14 @@
         })
         .fail((xhr, s, e) => {
           hideRailSkeleton()
-          errorB.show().text(`Erreur API: ${xhr.status} ${e || s}`)
+          lastError = { xhr, s, e }
+          errorB.hide()
+          console.warn('[CSLF] results fetch failed', xhr?.status || s || e)
+          armInteractionRetry()
           scheduleNext(3 * 60 * 1000)
+        })
+        .always(() => {
+          isFetching = false
         })
     }
 

@@ -147,153 +147,122 @@ function cslf_league_api_overview($league_id, $season = '') {
         'league' => $league_id,
         'season' => $season,
     ], 3600);
+
     $currentRoundResp = cslf_cached_get('/fixtures/rounds', [
         'league'  => $league_id,
         'season'  => $season,
         'current' => 'true',
     ], 3600);
 
-    $rounds        = array_values($roundsResp['response'] ?? []);
-    $currentRound  = $currentRoundResp['response'][0] ?? '';
-    $currentIndex  = cslf_match_round_index($rounds, $currentRound);
+    $rounds = array_values($roundsResp['response'] ?? []);
+    if (empty($rounds)) {
+        return [
+            'season'         => $season,
+            'current_round'  => '',
+            'next_round'     => '',
+            'next_fixtures'  => [],
+            'last_fixtures'  => [],
+            'standings'      => [],
+            'standings_full' => [],
+        ];
+    }
 
+    $currentRound = $currentRoundResp['response'][0] ?? '';
+    $currentIndex = cslf_match_round_index($rounds, $currentRound);
     if ($currentIndex < 0) {
         $currentIndex = max(count($rounds) - 1, 0);
-        $currentRound = $rounds[$currentIndex] ?? '';
+        $currentRound = $rounds[$currentIndex];
     }
 
     $finishedStatuses = ['FT', 'AET', 'PEN'];
+    $roundCache = [];
+    $fetchRound = function ($roundLabel) use (&$roundCache, $league_id, $season) {
+        $label = $roundLabel ?: '';
+        if ($label === '') {
+            return [];
+        }
+        if (!array_key_exists($label, $roundCache)) {
+            $resp = cslf_cached_get('/fixtures', [
+                'league' => $league_id,
+                'season' => $season,
+                'round'  => $label,
+            ], 300);
+            $roundCache[$label] = $resp['response'] ?? [];
+        }
+        return $roundCache[$label];
+    };
 
-    $currentFixturesResp = $currentRound
-        ? cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'round'  => $currentRound,
-        ], 300)
-        : ['response' => []];
+    $isRoundUnfinished = function ($fixtures) use ($finishedStatuses) {
+        foreach ($fixtures as $fx) {
+            $short = strtoupper($fx['fixture']['status']['short'] ?? '');
+            if (!in_array($short, $finishedStatuses, true)) {
+                return true;
+            }
+        }
+        return false;
+    };
 
-    $currentFixtures = $currentFixturesResp['response'] ?? [];
+    $displayRound = $currentRound;
+    $displayIndex = $currentIndex;
+    $displayFixtures = $fetchRound($currentRound);
 
-    $upcomingCurrent = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
-        $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
-        return !in_array($short, $finishedStatuses, true);
-    }));
-
-    $nextRound    = $rounds[$currentIndex + 1] ?? '';
-    $nextFixtures = [];
-    if ($nextRound) {
-        $nextResp     = cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'round'  => $nextRound,
-        ], 300);
-        $nextFixtures = $nextResp['response'] ?? [];
-    }
-
-    $upcoming = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
-        $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
-        return !in_array($short, $finishedStatuses, true);
-    }));
-
-    if (empty($upcoming) && $nextFixtures) {
-        $upcoming = $nextFixtures;
-        $currentRound = $nextRound;
-        $currentIndex = min($currentIndex + 1, count($rounds) - 1);
-        $nextRound    = $rounds[$currentIndex + 1] ?? '';
-        $currentFixtures = $nextFixtures;
-    }
-
-    if (empty($upcoming)) {
-        $fallback = cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'next'   => 40,
-        ], 300);
-        $upcoming = $fallback['response'] ?? [];
-    }
-
-    if (empty($upcoming)) {
-        $fallbackRecent = cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'last'   => 10,
-        ], 300);
-        $upcoming = array_values(array_filter($fallbackRecent['response'] ?? [], function ($fixture) use ($finishedStatuses) {
-            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
-            return in_array($short, $finishedStatuses, true);
-        }));
-        $detectedRound = '';
-        foreach ($upcoming as $fx) {
-            if (!empty($fx['league']['round'])) {
-                $detectedRound = $fx['league']['round'];
+    if (!$isRoundUnfinished($displayFixtures)) {
+        $displayRound = '';
+        $displayIndex = $currentIndex;
+        // try next rounds
+        for ($i = $currentIndex + 1; $i < count($rounds); $i++) {
+            $candidateFixtures = $fetchRound($rounds[$i]);
+            if (!empty($candidateFixtures)) {
+                $displayRound = $rounds[$i];
+                $displayIndex = $i;
+                $displayFixtures = $candidateFixtures;
                 break;
             }
         }
-        if ($detectedRound) {
-            $detectedIndex = cslf_match_round_index($rounds, $detectedRound);
-            if ($detectedIndex >= 0) {
-                $currentRound = $rounds[$detectedIndex];
-                $currentIndex = $detectedIndex;
-            } else {
-                $currentRound = $detectedRound;
+        // fallback to previous finished round
+        if ($displayRound === '') {
+            for ($i = $currentIndex; $i >= 0; $i--) {
+                $candidateFixtures = $fetchRound($rounds[$i]);
+                if (!empty($candidateFixtures)) {
+                    $displayRound = $rounds[$i];
+                    $displayIndex = $i;
+                    $displayFixtures = $candidateFixtures;
+                    break;
+                }
             }
         }
     }
 
-    $detectedRound = '';
-    foreach ($upcoming as $fx) {
-        if (!empty($fx['league']['round'])) {
-            $detectedRound = $fx['league']['round'];
+    $displayFixtures = array_values(array_filter($displayFixtures, function ($fx) {
+        return !empty($fx['fixture']['id']);
+    }));
+
+    $previousFixtures = [];
+    for ($i = $displayIndex - 1; $i >= 0; $i--) {
+        $candidate = $fetchRound($rounds[$i]);
+        $finished = array_values(array_filter($candidate, function ($fx) {
+            $short = strtoupper($fx['fixture']['status']['short'] ?? '');
+            return in_array($short, ['FT', 'AET', 'PEN'], true);
+        }));
+        if (!empty($finished)) {
+            $previousFixtures = $finished;
             break;
         }
     }
-    if ($detectedRound) {
-        $detectedIndex = cslf_match_round_index($rounds, $detectedRound);
-        if ($detectedIndex >= 0) {
-            $currentRound = $rounds[$detectedIndex];
-            $currentIndex = $detectedIndex;
-        } else {
-            $currentRound = $detectedRound;
+    if (empty($previousFixtures) && $displayIndex >= 0) {
+        $previousFixtures = array_values(array_filter($displayFixtures, function ($fx) use ($finishedStatuses) {
+            $short = strtoupper($fx['fixture']['status']['short'] ?? '');
+            return in_array($short, $finishedStatuses, true);
+        }));
+    }
+
+    $nextRound = $rounds[$displayIndex + 1] ?? '';
+    if ($nextRound) {
+        $nextRoundFixtures = $fetchRound($nextRound);
+        if (empty($nextRoundFixtures)) {
+            $nextRound = '';
         }
     }
-
-    $fixturesPool = array_merge($currentFixtures, $nextFixtures, $upcoming);
-    $currentFixtures = array_values(array_filter($fixturesPool, function ($fx) use ($currentRound) {
-        if (!$currentRound) return false;
-        return strcasecmp($fx['league']['round'] ?? '', $currentRound) === 0;
-    }));
-
-    $recent = [];
-    $prevRound = $rounds[$currentIndex - 1] ?? '';
-    if ($prevRound) {
-        $prevResp = cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'round'  => $prevRound,
-        ], 300);
-        $recent = array_values(array_filter($prevResp['response'] ?? [], function ($fixture) use ($finishedStatuses) {
-            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
-            return in_array($short, $finishedStatuses, true);
-        }));
-    }
-
-    if (empty($recent)) {
-        $recent = array_values(array_filter($currentFixtures, function ($fixture) use ($finishedStatuses) {
-            $short = strtoupper($fixture['fixture']['status']['short'] ?? '');
-            return in_array($short, $finishedStatuses, true);
-        }));
-    }
-
-    if (empty($recent)) {
-        $fallbackRecent = cslf_cached_get('/fixtures', [
-            'league' => $league_id,
-            'season' => $season,
-            'last'   => 15,
-        ], 300);
-        $recent = $fallbackRecent['response'] ?? [];
-    }
-
-    $recent = cslf_unique_fixtures($recent);
 
     $standingsResp = cslf_cached_get('/standings', [
         'league' => $league_id,
@@ -307,10 +276,10 @@ function cslf_league_api_overview($league_id, $season = '') {
 
     return [
         'season'         => $season,
-        'current_round'  => $currentRound,
+        'current_round'  => $displayRound,
         'next_round'     => $nextRound,
-        'next_fixtures'  => array_slice($upcoming, 0, 40),
-        'last_fixtures'  => array_slice($recent, 0, 40),
+        'next_fixtures'  => array_slice($displayFixtures, 0, 40),
+        'last_fixtures'  => array_slice($previousFixtures, 0, 40),
         'standings'      => array_slice($standings, 0, 5),
         'standings_full' => $standings,
     ];

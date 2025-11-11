@@ -94,6 +94,9 @@
     const body = root.querySelector('.cslf-widget-body')
     const errorEl = root.querySelector('.cslf-widget-error')
 
+    let hasContent = false
+    let retryArmed = false
+
     toggleLoading(true)
     requestWidgetData('widget_scorers', {
       league_id: config.league_id,
@@ -101,12 +104,48 @@
       limit: config.limit || 10,
     })
       .then((data) => {
+        hasContent = true
         render(root, data || {}, config)
       })
       .catch((err) => {
-        showError(root, err?.message || core.i18n?.error || 'Erreur')
+        console.warn('[CSLF] widget_scorers fetch failed', err)
+        if (!hasContent && errorEl) errorEl.style.display = 'none'
+        armRetry(config)
       })
       .finally(() => toggleLoading(false))
+
+    function armRetry(cfg) {
+      if (retryArmed) return
+      retryArmed = true
+      function cleanup() {
+        retryArmed = false
+        root.removeEventListener('mousemove', trigger)
+        root.removeEventListener('touchstart', trigger)
+        window.removeEventListener('scroll', trigger)
+      }
+      function trigger() {
+        cleanup()
+        toggleLoading(true)
+        requestWidgetData('widget_scorers', {
+          league_id: cfg.league_id,
+          season: cfg.season || '',
+          limit: cfg.limit || 10,
+        })
+          .then((data) => {
+            hasContent = true
+            render(root, data || {}, cfg)
+          })
+          .catch((err) => {
+            console.warn('[CSLF] widget_scorers retry failed', err)
+            if (!hasContent && errorEl) errorEl.style.display = 'none'
+            armRetry(cfg)
+          })
+          .finally(() => toggleLoading(false))
+      }
+      root.addEventListener('mousemove', trigger, { once: true })
+      root.addEventListener('touchstart', trigger, { once: true })
+      window.addEventListener('scroll', trigger, { once: true })
+    }
 
     function toggleLoading(state) {
       if (shell) shell.classList.toggle('is-loading', !!state)

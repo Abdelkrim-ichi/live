@@ -138,19 +138,49 @@
       const body = root.querySelector('.cslf-widget-body')
       const errorEl = root.querySelector('.cslf-widget-error')
   
+    let hasContent = false
+    let retryArmed = false
+
+    requestData(config)
+
+    function requestData(cfg, isRetry) {
+      if (!cfg?.league_id) return
+      if (!isRetry) retryArmed = false
       toggleLoading(true)
-    requestWidgetData('widget_standings', {
-      league_id: config.league_id,
-      season: config.season || '',
-      limit: config.limit || 10,
-    })
-      .then((data) => {
-        render(root, data || {}, config)
+      requestWidgetData('widget_standings', {
+        league_id: cfg.league_id,
+        season: cfg.season || '',
+        limit: cfg.limit || 10,
       })
-      .catch((err) => {
-        showError(root, err?.message || core.i18n?.error || 'Erreur')
-      })
-      .finally(() => toggleLoading(false))
+        .then((data) => {
+          hasContent = true
+          render(root, data || {}, cfg)
+        })
+        .catch((err) => {
+          console.warn('[CSLF] widget_standings fetch failed', err)
+          if (!hasContent && errorEl) errorEl.style.display = 'none'
+          armRetry(cfg)
+        })
+        .finally(() => toggleLoading(false))
+    }
+
+    function armRetry(cfg) {
+      if (retryArmed) return
+      retryArmed = true
+      function cleanup() {
+        retryArmed = false
+        root.removeEventListener('mousemove', trigger)
+        root.removeEventListener('touchstart', trigger)
+        window.removeEventListener('scroll', trigger)
+      }
+      function trigger() {
+        cleanup()
+        requestData(cfg, true)
+      }
+      root.addEventListener('mousemove', trigger, { once: true })
+      root.addEventListener('touchstart', trigger, { once: true })
+      window.addEventListener('scroll', trigger, { once: true })
+    }
   
       function toggleLoading(state) {
         if (shell) shell.classList.toggle('is-loading', !!state)
