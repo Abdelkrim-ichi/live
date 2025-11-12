@@ -34,6 +34,7 @@ require_once CSLF_PATH . 'includes/cslf-cache-warmers.php';
 // NEW: split shortcodes
 require_once CSLF_PATH . 'includes/shortcodes-results.php';
 require_once CSLF_PATH . 'includes/shortcodes-championnats.php';
+require_once CSLF_PATH . 'includes/shortcodes-match-spotlight.php';
 require_once CSLF_PATH . 'includes/shortcodes-detail.php';
 require_once CSLF_PATH . 'includes/league-api.php';
 require_once CSLF_PATH . 'includes/shortcodes-league-dashboard.php';

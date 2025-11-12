@@ -1,0 +1,217 @@
+.cslf-spotlight {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px 18px 24px;
+  color: #1d2233;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  border: 1px solid rgba(19, 23, 34, 0.08);
+  box-shadow: 0 12px 28px -20px rgba(12, 16, 40, 0.25);
+}
+
+.cslf-spotlight__header {
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.cslf-spotlight__league-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #1d2233;
+  text-decoration: none;
+}
+
+.cslf-spotlight__league-title:hover {
+  color: #f8365e;
+}
+
+.cslf-spotlight__league {
+  display: inline-flex;
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f8365e;
+  text-decoration: none;
+}
+
+.cslf-spotlight__more {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.cslf-spotlight__more a {
+  color: #f8365e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cslf-spotlight__more a:hover {
+  text-decoration: underline;
+}
+
+.cslf-spotlight__more-link {
+  color: #f8365e;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.cslf-spotlight__more-link:hover {
+  text-decoration: underline;
+}
+
+.cslf-spotlight__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.cslf-spotlight__card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #e7e9f2;
+}
+
+.cslf-spotlight__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px -22px rgba(12, 16, 40, 0.35);
+}
+
+.cslf-spotlight__card.is-morocco {
+  background: linear-gradient(135deg, #ffe2e6 0%, #ffd2dc 100%);
+  border-color: rgba(248, 54, 94, 0.4);
+  color: #132947;
+}
+
+.cslf-spotlight__meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: rgba(29, 34, 51, 0.6);
+}
+
+.cslf-spotlight__meta span + span {
+  margin-left: 12px;
+}
+
+.cslf-spotlight__card.is-morocco .cslf-spotlight__meta {
+  color: rgba(0, 0, 0, 0.65);
+}
+
+.cslf-spotlight__round {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cslf-spotlight__teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.cslf-spotlight__team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cslf-spotlight__team img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ffffff;
+  padding: 3px;
+  border: 1px solid rgba(29, 34, 51, 0.1);
+}
+
+.cslf-spotlight__card.is-morocco .cslf-spotlight__team img {
+  border-color: rgba(0, 0, 0, 0.1);
+}
+
+.cslf-spotlight__team-placeholder {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(29, 34, 51, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.cslf-spotlight__team-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.cslf-spotlight__score {
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  min-width: 40px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cslf-spotlight__score:hover {
+  text-decoration: underline;
+}
+
+.cslf-spotlight__card.is-morocco .cslf-spotlight__score {
+  color: #132947;
+}
+
+.cslf-spotlight__footer {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.cslf-spotlight__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8365e;
+  color: #ffffff;
+  font-weight: 600;
+  border-radius: 999px;
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.cslf-spotlight__button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -18px rgba(248, 54, 94, 0.6);
+}
+
+@media (max-width: 640px) {
+  .cslf-spotlight {
+    padding: 14px;
+  }
+
+  .cslf-spotlight__header {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .cslf-spotlight__header > *:first-child {
+    flex: 1;
+  }
+
+  .cslf-spotlight__grid {
+    grid-template-columns: 1fr;
+  }
+}
