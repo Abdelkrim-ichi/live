@@ -60,6 +60,12 @@
           ]
         },
         {
+          group: "Matchs amicaux internationaux",
+          competitions: [
+            { id: 10, name: "Friendlies" }
+          ]
+        },
+        {
           group: "Monde - Sélections (FIFA & JO)",
           competitions: [
             { id: 1,   name: "FIFA World Cup" },
@@ -175,6 +181,9 @@
 
     // === LISTE BLANCHE DES IDS AUTORISÉS ===
     const ALLOWED_LEAGUE_IDS = new Set()
+    
+    // Ajouter explicitement les matchs amicaux internationaux
+    ALLOWED_LEAGUE_IDS.add(10)
     
     // Remplir la liste blanche avec tous les IDs de votre configuration
     PRIORITY_CONFIG.priority.forEach(group => {
