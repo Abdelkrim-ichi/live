@@ -5,19 +5,21 @@ add_shortcode('csport_match_spotlight', 'cslf_match_spotlight_shortcode');
 
 function cslf_match_spotlight_translate_label($label) {
     if ($label === null) return '';
-    $key = mb_strtolower(trim($label), 'UTF-8');
-    if ($key === '') return '';
+    $trimmed = trim($label);
+    if ($trimmed === '') return '';
+    $key = mb_strtolower($trimmed, 'UTF-8');
 
     static $map = [
         'morocco' => 'Maroc',
         'morocco w' => 'Maroc',
         'morocco u17' => 'Maroc',
+        'morocco u19' => 'Maroc',
         'morocco u20' => 'Maroc',
         'morocco u23' => 'Maroc',
         'united states' => 'États-Unis',
+        'united states u19' => 'États-Unis',
         'republic of ireland' => 'République d’Irlande',
         'ireland republic' => 'Irlande',
-        'ireland' => 'Irlande',
         'france' => 'France',
         'spain' => 'Espagne',
         'portugal' => 'Portugal',
@@ -33,7 +35,12 @@ function cslf_match_spotlight_translate_label($label) {
         'canada' => 'Canada',
         'congo dr' => 'RD Congo',
         'congo' => 'Congo',
+        'germany' => 'Allemagne',
+        'germany u19' => 'Allemagne',
+        'usa u19' => 'États-Unis',
+        'gabon' => 'Gabon',
         'nigeria' => 'Nigeria',
+        'cameroun' => 'Cameroun',
         'cameroon' => 'Cameroun',
         'gabon' => 'Gabon',
         'paraguay' => 'Paraguay',
@@ -54,6 +61,8 @@ function cslf_match_spotlight_translate_label($label) {
         'croatia' => 'Croatie',
         'colombia w' => 'Colombie',
         'mexico w' => 'Mexique',
+        'world' => 'Monde',
+        'friendlies' => 'Matchs amicaux',
     ];
 
     static $roundMap = [
@@ -70,13 +79,14 @@ function cslf_match_spotlight_translate_label($label) {
         'playoff round'     => 'Tour de barrage',
         'preliminary round' => 'Tour préliminaire',
         'friendly'          => 'Match amical',
+        'friendlies'        => 'Match amical',
     ];
 
     if (isset($roundMap[$key])) {
         return $roundMap[$key];
     }
 
-    return $map[$key] ?? $label;
+    return $map[$key] ?? $trimmed;
 }
 
 function cslf_match_spotlight_shortcode($atts) {
@@ -152,6 +162,7 @@ function cslf_match_spotlight_shortcode($atts) {
     if (!$leagueLabel && !empty($allFixtures[0]['league']['name'])) {
         $leagueLabel = $allFixtures[0]['league']['name'];
     }
+    $leagueLabel = cslf_match_spotlight_translate_label($leagueLabel);
 
     $timezone = !empty($options['timezone']) ? $options['timezone'] : 'UTC';
 
@@ -173,6 +184,12 @@ function cslf_match_spotlight_shortcode($atts) {
                 $matchUrl = !empty($fixture['fixture']['id']) ? add_query_arg(['fixture' => intval($fixture['fixture']['id'])], home_url('/match-center/')) : '';
                 $home = $fixture['teams']['home'] ?? [];
                 $away = $fixture['teams']['away'] ?? [];
+                if (!empty($home['country'])) {
+                    $home['country'] = cslf_match_spotlight_translate_label($home['country']);
+                }
+                if (!empty($away['country'])) {
+                    $away['country'] = cslf_match_spotlight_translate_label($away['country']);
+                }
                 $status = $fixture['fixture']['status']['short'] ?? '';
                 $scoreHome = $fixture['goals']['home'] ?? null;
                 $scoreAway = $fixture['goals']['away'] ?? null;
@@ -265,12 +282,17 @@ function cslf_match_spotlight_render_team($team, $score, $status, $position) {
     ob_start();
     ?>
     <div class="<?php echo $klass; ?>">
-        <?php if ($logo): ?>
-            <img src="<?php echo esc_url($logo); ?>" alt="<?php echo esc_attr($name); ?>">
-        <?php else: ?>
-            <span class="cslf-spotlight__team-placeholder"><?php echo esc_html(mb_substr($name, 0, 2)); ?></span>
+        <div class="cslf-spotlight__team-row">
+            <?php if ($logo): ?>
+                <img src="<?php echo esc_url($logo); ?>" alt="<?php echo esc_attr($name); ?>">
+            <?php else: ?>
+                <span class="cslf-spotlight__team-placeholder"><?php echo esc_html(mb_substr($name, 0, 2)); ?></span>
+            <?php endif; ?>
+            <span class="cslf-spotlight__team-name"><?php echo esc_html($name); ?></span>
+        </div>
+        <?php if (!empty($team['country'])): ?>
+            <span class="cslf-spotlight__team-country"><?php echo esc_html($team['country']); ?></span>
         <?php endif; ?>
-        <span class="cslf-spotlight__team-name"><?php echo esc_html($name); ?></span>
     </div>
     <?php
     return ob_get_clean();

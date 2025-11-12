@@ -121,6 +121,13 @@
 
 .cslf-spotlight__team {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.cslf-spotlight__team-row {
+  display: flex;
   align-items: center;
   gap: 8px;
 }
@@ -152,6 +159,11 @@
 .cslf-spotlight__team-name {
   font-size: 0.92rem;
   font-weight: 600;
+}
+
+.cslf-spotlight__team-country {
+  font-size: 0.75rem;
+  color: rgba(29, 34, 51, 0.55);
 }
 
 .cslf-spotlight__score {

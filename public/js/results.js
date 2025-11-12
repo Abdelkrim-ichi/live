@@ -189,6 +189,7 @@
     const ALLOWED_LEAGUE_NAMES = [
       "supercoupe du maroc", "super coupe maroc"
     ]
+    const FRIENDLY_KEYWORDS = ["friendlies", "friendly", "amicaux", "amical"]
     const WORLD_CUP_KEYWORDS = [
       "world cup", "fifa world cup", "coupe du monde", "world cup - women",
       "world cup qualification", "world cup qualifiers", "world cup - qualification",
@@ -341,23 +342,27 @@
 
     function isAllowedCompetition(league) {
       if (!league) return false
-      
-      // Vérifier par ID
+
       if (ALLOWED_LEAGUE_IDS.has(league.id)) {
         return true
       }
-      
+
       const lname = league.name || ""
 
-      // Vérifier par nom (Supercoupe, World Cups, Africa Cups)
       if (
         (lname && hasTxt(lname, ALLOWED_LEAGUE_NAMES)) ||
         hasTxt(lname, WORLD_CUP_KEYWORDS) ||
-        hasTxt(lname, AFRICA_CUP_KEYWORDS)
+        hasTxt(lname, AFRICA_CUP_KEYWORDS) ||
+        hasTxt(lname, FRIENDLY_KEYWORDS)
       ) {
         return true
       }
-      
+
+      const ltype = String(league.type || "").toLowerCase()
+      if (ltype === "friendly" || hasTxt(ltype, FRIENDLY_KEYWORDS)) {
+        return true
+      }
+
       return false
     }
 
@@ -495,6 +500,30 @@
       return [label, null]
     }
 
+    function translateLabel(label) {
+      if (!label) return ""
+      const key = String(label).trim().toLowerCase()
+      if (!key) return label
+      const map = {
+        "world": "Monde",
+        "friendlies": "Matchs amicaux",
+        "friendlies 1": "Match amical",
+        "friendlies 2": "Match amical",
+        "league stage": "Phase de championnat",
+        "round of 32": "Seizièmes de finale",
+        "round of 16": "Huitièmes de finale",
+        "quarter-finals": "Quarts de finale",
+        "semi-finals": "Demi-finales",
+        "final": "Finale",
+        "england": "Angleterre",
+        "germany": "Allemagne",
+        "france": "France",
+        "spain": "Espagne",
+        "morocco": "Maroc",
+      }
+      return map[key] || label
+    }
+
     const requestCache = new Map()
     const refreshNonce =
       (w.CSLF_REFRESH_NONCE =
@@ -622,32 +651,29 @@
       const allowedList = filterAllowedMatches(list)
       const grouped = groupLeagues(allowedList)
       const current = sel.length ? sel.val() || "all" : "all"
-    const visibleGroups =
-      current === "all"
+      const visibleGroups = current === "all"
         ? grouped
         : grouped.filter((g) => String(g.id) === String(current))
 
       const totalMatches = visibleGroups.reduce((sum, g) => sum + g.m.length, 0)
-      const hasData = totalMatches > 0
-      empty.toggle(!hasData)
-      root.toggleClass('is-empty', !hasData)
-      if (!hasData) {
-        rail.innerHTML = ""
+      empty.toggle(totalMatches === 0)
+      rail.innerHTML = ""
+      if (!totalMatches) {
         updateNav()
         return
       }
-      rail.innerHTML = ""
 
       const frag = d.createDocumentFragment()
       visibleGroups.forEach((G) => {
         const leagueBox = d.createElement("div")
         leagueBox.className = "cslf-league-block"
+        const leagueName = translateLabel(G.name)
         leagueBox.innerHTML = `
   <div class="cslf-league-header">
     <a class="cslf-league-title" href="${buildLeagueUrl(G)}">
-      ${G.name}
+      ${leagueName}
     </a>
-    <span class="cslf-league-country">${G.country || ""}</span>
+    <span class="cslf-league-country">${translateLabel(G.country || "")}</span>
   </div>
 `
         const listEl = d.createElement("div")
@@ -665,7 +691,7 @@
           const st = m.fixture?.status || {}
           const gh = m.goals?.home ?? "-"
           const ga = m.goals?.away ?? "-"
-          const round = m.league?.round || ""
+          const round = translateLabel(m.league?.round || "")
           const venue = m.fixture?.venue?.name || ""
           const [homeName] = translateTeamName(h.name || "")
           const [awayName] = translateTeamName(a.name || "")
@@ -824,7 +850,6 @@
       }
       api("fixtures", q)
         .done((p) => {
-          clearInteractionRetry()
           lastError = null
           if (!p || !p.success) {
             hideRailSkeleton()

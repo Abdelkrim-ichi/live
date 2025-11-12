@@ -129,6 +129,12 @@ function cslf_followed_league_groups() {
                 ['id' => 27, 'label' => 'OFC Champions League'],
             ],
         ],
+        [
+            'group' => __('Matchs amicaux', 'csport-live-foot'),
+            'items' => [
+                ['id' => 10, 'label' => 'Matchs amicaux internationaux'],
+            ],
+        ],
     ];
 }
 
