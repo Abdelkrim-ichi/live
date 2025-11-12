@@ -28,10 +28,12 @@ function cslf_default_options() {
 
 // Load files
 require_once CSLF_PATH . 'includes/helpers.php';
+require_once CSLF_PATH . 'includes/leagues-followed.php';
 require_once CSLF_PATH . 'includes/class-csport-live-foot.php';
 require_once CSLF_PATH . 'includes/cslf-cache-warmers.php';
 // NEW: split shortcodes
 require_once CSLF_PATH . 'includes/shortcodes-results.php';
+require_once CSLF_PATH . 'includes/shortcodes-championnats.php';
 require_once CSLF_PATH . 'includes/shortcodes-detail.php';
 require_once CSLF_PATH . 'includes/league-api.php';
 require_once CSLF_PATH . 'includes/shortcodes-league-dashboard.php';
