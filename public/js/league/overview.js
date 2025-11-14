@@ -135,6 +135,25 @@
     const goals = fx?.goals || {}
     const status = fx?.fixture?.status || {}
     const meta = fx?.league || {}
+    const penaltyHome = fx?.score?.penalty?.home
+    const penaltyAway = fx?.score?.penalty?.away
+    
+    // Détecter si le match est terminé avec pénalties
+    const statusShort = String(status?.short || '').toUpperCase()
+    const hasFinalPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                               penaltyAway !== null && penaltyAway !== undefined)
+    const isFinishedWithPenalties = (['FT', 'AET', 'PEN', 'P'].includes(statusShort) && hasFinalPenalties)
+    
+    // Déterminer quelle équipe a perdu aux pénalties
+    let homeLoser = false
+    let awayLoser = false
+    if (isFinishedWithPenalties) {
+      if (penaltyHome < penaltyAway) {
+        homeLoser = true
+      } else if (penaltyAway < penaltyHome) {
+        awayLoser = true
+      }
+    }
 
     const row = document.createElement('div')
     row.className = 'cslf-schedule-row'
@@ -148,15 +167,18 @@
 
     const center = document.createElement('div')
     center.className = 'cslf-schedule-center'
+    const homeClass = homeLoser ? 'cslf-schedule-team--loser' : ''
+    const awayClass = awayLoser ? 'cslf-schedule-team--loser' : ''
     center.innerHTML = `
-      <span class="team">
+      ${isFinishedWithPenalties ? '<span class="cslf-schedule-pen">Pen</span>' : ''}
+      <span class="team ${homeClass}">
         ${logo(home)}
         <span>${cleanName(home?.name)}</span>
       </span>
       <span class="score">${score(goals?.home)} <span class="dash">-</span> ${score(
       goals?.away
     )}</span>
-      <span class="team is-away">
+      <span class="team is-away ${awayClass}">
         ${logo(away)}
         <span>${cleanName(away?.name)}</span>
       </span>
@@ -190,10 +212,13 @@
     if (!date) return ''
     try {
       const d = new Date(date)
-      return d.toLocaleTimeString([], {
+      const today = new Date()
+      const isToday = d.toDateString() === today.toDateString()
+      const timeStr = d.toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',
       })
+      return isToday ? `Aujourd'hui ${timeStr}` : timeStr
     } catch (e) {
       return ''
     }

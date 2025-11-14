@@ -220,18 +220,55 @@
     const status = fx?.fixture?.status || {}
     const venue = fx?.fixture?.venue?.name || ''
     const round = fx?.league?.round || ''
+    const penaltyHome = fx?.score?.penalty?.home
+    const penaltyAway = fx?.score?.penalty?.away
+    
+    // Détecter si le match est terminé avec pénalties
+    const statusShort = String(status?.short || '').toUpperCase()
+    const hasFinalPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                               penaltyAway !== null && penaltyAway !== undefined)
+    const isFinishedWithPenalties = (['FT', 'AET', 'PEN', 'P'].includes(statusShort) && hasFinalPenalties)
+    
+    // Déterminer quelle équipe a perdu aux pénalties
+    let homeLoser = false
+    let awayLoser = false
+    if (isFinishedWithPenalties) {
+      if (penaltyHome < penaltyAway) {
+        homeLoser = true
+      } else if (penaltyAway < penaltyHome) {
+        awayLoser = true
+      }
+    }
+    
+    // Vérifier si c'est une qualification (pour ne pas barrer l'équipe perdante)
+    const isQualification = (round || '').toLowerCase().includes('qualif') || 
+                           (round || '').toLowerCase().includes('playoff') ||
+                           (round || '').toLowerCase().includes('play-off')
+    
+    const homeClass = (homeLoser && !isQualification) ? 'cslf-match-team--loser' : ''
+    const awayClass = (awayLoser && !isQualification) ? 'cslf-match-team--loser' : ''
+    
+    // Afficher les pénalties si le match est terminé avec pénalties
+    let penaltyDisplay = ''
+    if (isFinishedWithPenalties) {
+      penaltyDisplay = `<div class="cslf-match-penalties">Pen: ${penaltyHome}-${penaltyAway}</div>`
+    }
 
     const row = document.createElement('div')
     row.className = 'cslf-league-matchrow'
     row.innerHTML = `
       <div class="line">
-        <span class="team">
+        ${isFinishedWithPenalties ? '<span class="cslf-match-pen-label">Pen</span>' : ''}
+        <span class="team ${homeClass}">
           ${home?.logo ? `<img class="team-badge" src="${home.logo}" alt="${home?.name || ''}">` : ''}
-          ${clean(home?.name)}
+          <span>${clean(home?.name)}</span>
         </span>
-        <span class="score">${score(goals?.home)} – ${score(goals?.away)}</span>
-        <span class="team" style="justify-content:flex-end;">
-          ${clean(away?.name)}
+        <span class="score">
+          ${score(goals?.home)} – ${score(goals?.away)}
+          ${penaltyDisplay}
+        </span>
+        <span class="team ${awayClass}" style="justify-content:flex-end;">
+          <span>${clean(away?.name)}</span>
           ${away?.logo ? `<img class="team-badge" src="${away.logo}" alt="${away?.name || ''}">` : ''}
         </span>
       </div>

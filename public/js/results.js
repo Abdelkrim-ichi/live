@@ -664,7 +664,12 @@
 
     function fmtTime(iso) {
       try {
-        return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        if (!iso) return ""
+        const matchDate = new Date(iso)
+        const today = new Date()
+        const isToday = matchDate.toDateString() === today.toDateString()
+        const timeStr = matchDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        return isToday ? `Aujourd'hui ${timeStr}` : timeStr
       } catch (e) {
         return ""
       }

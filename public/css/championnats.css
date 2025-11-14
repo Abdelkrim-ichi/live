@@ -4,19 +4,26 @@
   flex-direction: column;
   gap: 32px;
   font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  background: #ffffff !important;
+  padding: 24px;
+  border-radius: 16px;
+  color: #111827 !important;
+}
+.cslf-league-catalog * {
+  color: inherit;
 }
 
 .cslf-league-section__header h2 {
   margin: 0 0 8px;
   font-size: 1.35rem;
   font-weight: 700;
-  color: #131722;
+  color: #111827;
 }
 
 .cslf-league-section__note {
   margin: 0;
   font-size: 0.9rem;
-  color: #5f6779;
+  color: #6b7280;
 }
 
 .cslf-league-grid {
@@ -34,17 +41,18 @@
   padding: 18px 16px;
   text-decoration: none;
   border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid rgba(19, 23, 34, 0.08);
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   overflow: hidden;
   min-height: 180px;
+  color: #111827 !important;
 }
 
 .cslf-league-card:hover {
   transform: translateY(-4px);
   border-color: rgba(66, 99, 235, 0.35);
-  box-shadow: 0 16px 30px -24px rgba(19, 23, 34, 0.65);
+  box-shadow: 0 16px 30px -24px rgba(0, 0, 0, 0.65);
 }
 
 .cslf-league-card__media {
@@ -80,12 +88,12 @@
 .cslf-league-card__name {
   font-weight: 600;
   font-size: 1rem;
-  color: #131722;
+  color: #111827;
 }
 
 .cslf-league-card__country {
   font-size: 0.85rem;
-  color: #6a7285;
+  color: #6b7280;
 }
 
 .cslf-league-card__hover {
@@ -116,9 +124,9 @@
   padding: 24px;
   background: #f6f7fb;
   border-radius: 16px;
-  border: 1px dashed rgba(19, 23, 34, 0.2);
+  border: 1px dashed #d1d5db;
   font-size: 0.95rem;
-  color: #5f6779;
+  color: #6b7280;
 }
 
 @media (max-width: 640px) {
