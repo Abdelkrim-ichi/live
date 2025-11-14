@@ -3,11 +3,14 @@
     w.CSLF_LEAGUE_TAB_HANDLERS || {})
 
   ns.team = function ({ panel, data }) {
-    clear(panel)
+    const panelEl = panel && panel.jquery ? panel.get(0) : panel
+    if (!panelEl) return
+    clear(panelEl)
+    
     const players = data?.players || []
     if (!players.length) {
       setHTML(
-        panel,
+        panelEl,
         '<div class="cslf-league-empty">Équipe de la semaine indisponible pour le moment.</div>'
       )
       return
@@ -17,15 +20,26 @@
     wrap.className = 'cslf-league-team'
 
     const card = document.createElement('div')
-    card.className = 'cslf-league-card'
+    card.className = 'cslf-league-team-card'
 
     const header = document.createElement('div')
-    header.className = 'meta'
+    header.className = 'cslf-league-team-header'
     const fixture = data?.fixture?.teams || {}
-    header.innerHTML = `
-      <span>${fixture?.home?.name || ''} vs ${fixture?.away?.name || ''}</span>
-      <span>${formatDate(data?.fixture?.fixture?.date)}</span>
-    `
+    if (fixture?.home || fixture?.away) {
+      header.innerHTML = `
+        <div class="cslf-league-team-match">
+          ${fixture?.home?.logo ? `<img src="${fixture.home.logo}" alt="${fixture.home.name || ''}" width="24" height="24">` : ''}
+          <span class="cslf-league-team-vs">${fixture?.home?.name || ''} vs ${fixture?.away?.name || ''}</span>
+          ${fixture?.away?.logo ? `<img src="${fixture.away.logo}" alt="${fixture.away.name || ''}" width="24" height="24">` : ''}
+        </div>
+        <div class="cslf-league-team-date">${formatDate(data?.fixture?.fixture?.date)}</div>
+      `
+    } else {
+      header.innerHTML = `
+        <div class="cslf-league-team-title">Équipe de la semaine</div>
+        <div class="cslf-league-team-date">${formatDate(data?.fixture?.fixture?.date)}</div>
+      `
+    }
     card.appendChild(header)
 
     const list = document.createElement('div')
@@ -34,12 +48,21 @@
     card.appendChild(list)
     wrap.appendChild(card)
 
-    append(panel, wrap)
+    append(panelEl, wrap)
   }
 
   function renderPlayers(players) {
     if (!players.length) {
       return '<div class="cslf-league-empty">Aucun joueur listé.</div>'
+    }
+
+    function getInitials(name) {
+      if (!name) return '?'
+      const parts = name.trim().split(/\s+/)
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      }
+      return name.substring(0, 2).toUpperCase()
     }
 
     return players
@@ -48,19 +71,26 @@
         const stats = player?.stats || {}
         const team = player?.team || stats?.team || {}
         const rating = parseFloat(player?.rating ?? stats?.games?.rating ?? 0)
+        const playerName = info?.name || ''
+        const playerPhoto = info?.photo || ''
+        const initials = getInitials(playerName)
+        
+        const photoHtml = playerPhoto 
+          ? `<img src="${playerPhoto}" alt="${playerName}" width="40" height="40">`
+          : `<div class="cslf-league-player-placeholder">${initials}</div>`
+        
         return `
           <div class="cslf-league-player">
+            ${photoHtml}
             <span>
-              ${info?.photo ? `<img src="${info.photo}" alt="${info?.name || ''}" width="32" height="32">` : ''}
               <span class="name-stack">
-                <span>${info?.name || ''}</span>
+                <span>${playerName}</span>
                 <span class="club">${team?.name || ''}</span>
               </span>
             </span>
             <span class="meta">
               ${team?.logo ? `<img src="${team.logo}" alt="${team.name || ''}" width="18" height="18">` : ''}
               ${stats?.games?.position || ''}
-              ${rating ? ` • ${rating.toFixed(2)}` : ''}
             </span>
             ${rating ? `<span class="rating">${rating.toFixed(2)}</span>` : ''}
           </div>

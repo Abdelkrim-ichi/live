@@ -39,8 +39,17 @@
       return block
     }
 
-    const ul = document.createElement('ul')
-    ul.className = 'cslf-league-list'
+    function getInitials(name) {
+      if (!name) return '?'
+      const parts = name.trim().split(/\s+/)
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      }
+      return name.substring(0, 2).toUpperCase()
+    }
+
+    const grid = document.createElement('div')
+    grid.className = 'cslf-league-stats-list'
     list.slice(0, 10).forEach((entry) => {
       const stats = entry?.statistics?.[0] || entry || {}
       const player = entry?.player || stats.player || {}
@@ -50,20 +59,33 @@
         typeof value === 'number'
           ? value
           : parseFloat(value || 0) || 0
-      const li = document.createElement('li')
-      li.innerHTML = `
-        <span class="name">
-          ${player?.photo ? `<img src="${player.photo}" alt="${player?.name || ''}">` : ''}
+      
+      const playerName = player?.name || ''
+      const playerPhoto = player?.photo || ''
+      const initials = getInitials(playerName)
+      
+      const photoHtml = playerPhoto 
+        ? `<img src="${playerPhoto}" alt="${playerName}" width="40" height="40">`
+        : `<div class="cslf-league-player-placeholder">${initials}</div>`
+      
+      const playerCard = document.createElement('div')
+      playerCard.className = 'cslf-league-player'
+      playerCard.innerHTML = `
+        ${photoHtml}
+        <span>
           <span class="name-stack">
-            <span>${player?.name || ''}</span>
+            <span>${playerName}</span>
             <span class="club">${team?.name || ''}</span>
           </span>
         </span>
-        <span class="value">${displayValue}</span>
+        <span class="meta">
+          ${team?.logo ? `<img src="${team.logo}" alt="${team.name || ''}" width="18" height="18">` : ''}
+        </span>
+        <span class="rating">${displayValue}</span>
       `
-      ul.appendChild(li)
+      grid.appendChild(playerCard)
     })
-    block.appendChild(ul)
+    block.appendChild(grid)
     return block
   }
 

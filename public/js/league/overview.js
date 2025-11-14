@@ -2,17 +2,28 @@
   const ns = (w.CSLF_LEAGUE_TAB_HANDLERS =
     w.CSLF_LEAGUE_TAB_HANDLERS || {})
 
-  ns.overview = function ({ panel, data, root }) {
+  ns.overview = function ({ panel, data, root, config }) {
     const panelEl = panel && panel.jquery ? panel.get(0) : panel
-    clear(panel)
+    if (!panelEl) {
+      console.warn('Overview: panel element not found')
+      return
+    }
+    clear(panelEl)
+    
+    // Debug: vérifier les données
+    if (!data) {
+      console.warn('Overview: no data provided', { panel, data, root, config })
+      setHTML(panelEl, '<div class="cslf-league-empty">Aucune donnée disponible.</div>')
+      return
+    }
 
     const next = data?.next_fixtures || []
     const last = data?.last_fixtures || []
 
-    if (!next.length && !last.length) {
+    if (!next.length && !last.length && !(data?.standings || []).length) {
       setHTML(
         panelEl,
-        '<div class="cslf-league-empty">Aucune rencontre disponible pour l’instant.</div>'
+        '<div class="cslf-league-empty">Aucune rencontre disponible pour l\'instant.</div>'
       )
       return
     }
@@ -33,16 +44,25 @@
     if (recentSection) append(wrap, recentSection)
 
     if ((data?.standings || []).length) {
+      const $root = root && root.jquery ? root : (root ? $(root) : null)
       append(
         wrap,
         renderStandings(
           data.standings,
           data?.standings_full || data?.standings,
-          root
+          $root
         )
       )
     }
-    append(panelEl, wrap)
+    
+    if (wrap.children.length > 0) {
+      append(panelEl, wrap)
+    } else {
+      setHTML(
+        panelEl,
+        '<div class="cslf-league-empty">Aucune donnée disponible pour l\'instant.</div>'
+      )
+    }
   }
 
   function renderScheduleSection(title, fixtures, options = {}) {
@@ -406,13 +426,18 @@
   }
 
   function append(parent, child) {
-    if (!child) return
+    if (!child || !parent) return
     if (parent && parent.jquery) {
       parent.append(child)
     } else if (parent instanceof HTMLElement) {
-      parent.append(
-        child instanceof HTMLElement || child instanceof Node ? child : createFragment(child)
-      )
+      if (child instanceof HTMLElement || child instanceof Node) {
+        parent.appendChild(child)
+      } else {
+        const frag = createFragment(child)
+        if (frag) {
+          parent.appendChild(frag)
+        }
+      }
     }
   }
 

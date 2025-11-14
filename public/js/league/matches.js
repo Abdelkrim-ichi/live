@@ -256,8 +256,9 @@
 
     const row = document.createElement('div')
     row.className = 'cslf-league-matchrow'
+    const lineClass = isFinishedWithPenalties ? 'line has-pen' : 'line'
     row.innerHTML = `
-      <div class="line">
+      <div class="${lineClass}">
         ${isFinishedWithPenalties ? '<span class="cslf-match-pen-label">Pen</span>' : ''}
         <span class="team ${homeClass}">
           ${home?.logo ? `<img class="team-badge" src="${home.logo}" alt="${home?.name || ''}">` : ''}

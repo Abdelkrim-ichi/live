@@ -46,15 +46,47 @@ function cslf_live_foot_league_shortcode($atts = [], $content = null) {
         'seasons'   => $seasons_for_js,
     ];
 
+    // Déterminer le type de compétition
+    $league_name = strtolower($meta['name'] ?? '');
+    $league_type = $meta['type'] ?? '';
+    $is_international = cslf_is_international_competition($league_id, $league_name, $league_type);
+    $is_domestic_league = !$is_international && ($league_type === 'League' || empty($league_type));
+    
+    // Vérifier si le classement existe
+    $has_standings = false;
+    try {
+        $standings_resp = cslf_cached_get('/standings', [
+            'league' => $league_id,
+            'season' => $season,
+        ], 600);
+        $has_standings = !empty($standings_resp['response'][0]['league']['standings']);
+    } catch (Exception $e) {
+        // Ignore
+    }
+    
     $tabs = [
         'overview'   => __('Aperçu', 'csport-live-foot'),
-        'standings'  => __('Classement', 'csport-live-foot'),
-        'matches'    => __('Matches', 'csport-live-foot'),
-        'stats'      => __('Statistiques', 'csport-live-foot'),
-        'transfers'  => __('Transferts', 'csport-live-foot'),
-        'seasons'    => __('Saisons', 'csport-live-foot'),
-        'team'       => __('Équipe de la semaine', 'csport-live-foot'),
     ];
+    
+    // Ajouter classement seulement s'il existe (après overview)
+    if ($has_standings) {
+        $tabs['standings'] = __('Classement', 'csport-live-foot');
+    }
+    
+    $tabs['matches'] = __('Matches', 'csport-live-foot');
+    $tabs['stats'] = __('Statistiques', 'csport-live-foot');
+    
+    // Ajouter transferts seulement pour les leagues domestiques
+    if ($is_domestic_league) {
+        $tabs['transfers'] = __('Transferts', 'csport-live-foot');
+    }
+    
+    // Ajouter saisons seulement pour les leagues domestiques
+    if ($is_domestic_league) {
+        $tabs['seasons'] = __('Saisons', 'csport-live-foot');
+    }
+    
+    $tabs['team'] = __('Équipe de la semaine', 'csport-live-foot');
 
     $title = !empty($atts['title']) ? $atts['title'] : ($meta['name'] ?? __('Championnat', 'csport-live-foot'));
     ob_start();
@@ -153,5 +185,77 @@ function cslf_enqueue_league_assets() {
             'error'     => __('Erreur de chargement.', 'csport-live-foot'),
         ],
     ]);
+}
+
+/**
+ * Détermine si une compétition est internationale (pas une league domestique).
+ */
+function cslf_is_international_competition($league_id, $league_name = '', $league_type = '') {
+    $name_lower = strtolower($league_name);
+    
+    // Compétitions internationales de sélections
+    $international_keywords = [
+        'world cup', 'coupe du monde',
+        'euro', 'european championship',
+        'africa cup', 'afcon', 'can',
+        'copa america', 'gold cup',
+        'asian cup', 'nations league',
+        'qualification', 'qualif',
+        'friendly international', 'match amical',
+        'olympics', 'olympique',
+    ];
+    
+    foreach ($international_keywords as $keyword) {
+        if (strpos($name_lower, $keyword) !== false) {
+            return true;
+        }
+    }
+    
+    // Champions League / Coupes continentales
+    $continental_keywords = [
+        'champions league', 'europa league', 'conference league',
+        'caf champions', 'caf confederation',
+        'copa libertadores', 'copa sudamericana',
+        'afc champions', 'concacaf champions',
+    ];
+    
+    foreach ($continental_keywords as $keyword) {
+        if (strpos($name_lower, $keyword) !== false) {
+            return true;
+        }
+    }
+    
+    // IDs de compétitions internationales connues
+    $international_ids = [
+        1,   // World Cup
+        2,   // Champions League
+        3,   // Europa League
+        4,   // European Championship
+        5,   // Copa America
+        6,   // Africa Cup of Nations
+        10,  // Friendlies
+        12,  // CAF Champions League
+        13,  // CONMEBOL Libertadores
+        15,  // AFC Asian Cup
+        848, // Conference League
+    ];
+    
+    if (in_array($league_id, $international_ids)) {
+        return true;
+    }
+    
+    // Si le type est "Cup" et pas "League", c'est probablement une compétition internationale
+    if ($league_type === 'Cup' && strpos($name_lower, 'cup') !== false) {
+        // Mais on exclut les coupes nationales (ex: Coupe du Trône)
+        $domestic_cup_keywords = ['coupe du trône', 'fa cup', 'coupe de france', 'copa del rey'];
+        foreach ($domestic_cup_keywords as $domestic) {
+            if (strpos($name_lower, $domestic) !== false) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    return false;
 }
 

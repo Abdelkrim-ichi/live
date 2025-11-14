@@ -181,6 +181,9 @@
       const $tabs = $root.find('.cslf-league-tab')
       const $content = $root.find('.cslf-league-content')
       const panels = {}
+      
+      // S'assurer que tous les tabs sont visibles par défaut
+      $tabs.show()
 
       $root.find('.cslf-league-panel').each(function () {
         const $panel = $(this)
@@ -254,6 +257,7 @@
           panel.html(
             `<div class="cslf-league-empty">Module "${tab}" en préparation…</div>`
           )
+          checkAndHideEmptyTab(tab, panel)
           return
         }
 
@@ -263,6 +267,49 @@
           config,
           data: payload,
         })
+        
+        // Vérifier si le panel est vide après le rendu
+        setTimeout(() => {
+          checkAndHideEmptyTab(tab, panel)
+        }, 100)
+      }
+
+      function checkAndHideEmptyTab(tab, $panel) {
+        if (!$panel || !$panel.length) return
+        
+        // Ne pas vérifier si le tab n'a pas encore été chargé (pas dans le cache)
+        if (!state.cache[tab]) {
+          return
+        }
+        
+        // Vérifier si le panel est vide ou ne contient que des messages d'erreur/vide
+        const html = $panel.html().trim()
+        const hasEmptyClass = $panel.find('.cslf-league-empty').length > 0
+        const hasContent = $panel.find('*').length > 0 && html.length > 50
+        const isJustLoading = html === 'Chargement…' || html === ''
+        
+        // Le panel est vide seulement s'il a la classe empty OU s'il n'a pas de contenu significatif
+        const isEmpty = hasEmptyClass || (isJustLoading && !hasContent)
+        
+        if (isEmpty) {
+          const $tab = $tabs.filter(`[data-tab="${tab}"]`)
+          if ($tab.length) {
+            $tab.hide()
+            // Si c'est le tab actif et qu'il est vide, activer le premier tab visible
+            if ($tab.hasClass('is-active')) {
+              const $firstVisible = $tabs.filter(':visible').first()
+              if ($firstVisible.length) {
+                setActive($firstVisible.data('tab'))
+              }
+            }
+          }
+        } else {
+          // S'assurer que le tab est visible s'il a du contenu
+          const $tab = $tabs.filter(`[data-tab="${tab}"]`)
+          if ($tab.length) {
+            $tab.show()
+          }
+        }
       }
 
       function fetchTab(tab, extra = {}) {
@@ -311,6 +358,7 @@
       const defaultTab =
         localStorage.getItem(getStorageKey()) ||
         $tabs.filter('.is-active').data('tab') ||
+        $tabs.filter(':visible').first().data('tab') ||
         $tabs.first().data('tab')
 
       if (defaultTab) {
@@ -318,6 +366,18 @@
       } else {
         renderError('Aucun onglet configuré.')
       }
+      
+      // Vérifier tous les tabs après un délai pour cacher ceux qui sont vides
+      // On attend que le tab par défaut soit chargé
+      setTimeout(() => {
+        $tabs.each(function() {
+          const tabId = $(this).data('tab')
+          const $panel = panels[tabId]
+          if ($panel && state.cache[tabId]) {
+            checkAndHideEmptyTab(tabId, $panel)
+          }
+        })
+      }, 1500)
     })
   })
 })(window, document, window.jQuery)
