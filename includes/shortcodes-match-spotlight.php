@@ -123,15 +123,62 @@ function cslf_match_spotlight_shortcode($atts) {
         $season = cslf_resolve_league_season($leagueId, '');
     }
 
-    $query = [
+    // Récupérer les matchs d'aujourd'hui et les matchs à venir
+    $timezone = !empty($options['timezone']) ? $options['timezone'] : 'UTC';
+    $today = new DateTime('now', new DateTimeZone($timezone));
+    $todayStr = $today->format('Y-m-d');
+    
+    $queryToday = [
+        'league' => $leagueId,
+        'season' => $season,
+        'date'   => $todayStr,
+    ];
+    
+    $queryNext = [
         'league' => $leagueId,
         'season' => $season,
         'next'   => $limit * 2,
     ];
 
-    $response = cslf_cached_get('/fixtures', $query, 300);
-    $fixtures = is_array($response['response'] ?? null) ? $response['response'] : [];
+    $responseToday = cslf_cached_get('/fixtures', $queryToday, 300);
+    $responseNext = cslf_cached_get('/fixtures', $queryNext, 300);
+    
+    $fixturesToday = is_array($responseToday['response'] ?? null) ? $responseToday['response'] : [];
+    $fixturesNext = is_array($responseNext['response'] ?? null) ? $responseNext['response'] : [];
+    
+    // Fusionner et dédupliquer par fixture ID
+    $fixturesById = [];
+    foreach ($fixturesToday as $fixture) {
+        $id = $fixture['fixture']['id'] ?? null;
+        if ($id) {
+            $fixturesById[$id] = $fixture;
+        }
+    }
+    foreach ($fixturesNext as $fixture) {
+        $id = $fixture['fixture']['id'] ?? null;
+        if ($id && !isset($fixturesById[$id])) {
+            $fixturesById[$id] = $fixture;
+        }
+    }
+    $fixtures = array_values($fixturesById);
 
+    // Trier les matchs : d'abord ceux d'aujourd'hui, puis les autres par date
+    usort($fixtures, function($a, $b) use ($todayStr) {
+        $dateA = $a['fixture']['date'] ?? '';
+        $dateB = $b['fixture']['date'] ?? '';
+        $dateAOnly = substr($dateA, 0, 10);
+        $dateBOnly = substr($dateB, 0, 10);
+        
+        // Les matchs d'aujourd'hui en premier
+        $isTodayA = ($dateAOnly === $todayStr);
+        $isTodayB = ($dateBOnly === $todayStr);
+        if ($isTodayA && !$isTodayB) return -1;
+        if (!$isTodayA && $isTodayB) return 1;
+        
+        // Sinon trier par date
+        return strcmp($dateA, $dateB);
+    });
+    
     $moroccoFixtures = [];
     $otherFixtures = [];
     foreach ($fixtures as $fixture) {
@@ -164,8 +211,6 @@ function cslf_match_spotlight_shortcode($atts) {
     }
     $leagueLabel = cslf_match_spotlight_translate_label($leagueLabel);
 
-    $timezone = !empty($options['timezone']) ? $options['timezone'] : 'UTC';
-
     ob_start();
     ?>
     <section class="cslf-spotlight">
@@ -193,7 +238,26 @@ function cslf_match_spotlight_shortcode($atts) {
                 $status = $fixture['fixture']['status']['short'] ?? '';
                 $scoreHome = $fixture['goals']['home'] ?? null;
                 $scoreAway = $fixture['goals']['away'] ?? null;
+                $penaltyHome = $fixture['score']['penalty']['home'] ?? null;
+                $penaltyAway = $fixture['score']['penalty']['away'] ?? null;
                 $timeLabel = cslf_match_spotlight_time_label($fixture, $timezone);
+                
+                // Détecter si le match est terminé avec pénalties
+                $statusUpper = strtoupper($status);
+                $hasFinalPenalties = ($penaltyHome !== null && $penaltyAway !== null);
+                // Match terminé avec pénalties si : FT/AET avec pénalties, ou statut PEN avec pénalties finales
+                $isFinishedWithPenalties = (in_array($statusUpper, ['FT', 'AET', 'PEN', 'P']) && $hasFinalPenalties);
+                
+                // Déterminer quelle équipe a perdu aux pénalties
+                $homeLoser = false;
+                $awayLoser = false;
+                if ($isFinishedWithPenalties) {
+                    if ($penaltyHome < $penaltyAway) {
+                        $homeLoser = true;
+                    } elseif ($penaltyAway < $penaltyHome) {
+                        $awayLoser = true;
+                    }
+                }
             ?>
             <article class="<?php echo esc_attr($classes); ?>">
                 <div class="cslf-spotlight__meta">
@@ -203,9 +267,12 @@ function cslf_match_spotlight_shortcode($atts) {
                     <?php endif; ?>
                 </div>
                 <div class="cslf-spotlight__teams">
-                    <?php echo cslf_match_spotlight_render_team($home, $scoreHome, $status, 'home'); ?>
+                    <?php if ($isFinishedWithPenalties): ?>
+                        <span class="cslf-spotlight__pen-label">Pen</span>
+                    <?php endif; ?>
+                    <?php echo cslf_match_spotlight_render_team($home, $scoreHome, $status, 'home', $homeLoser); ?>
                     <span class="cslf-spotlight__score"><?php echo cslf_match_spotlight_score_label($status, $scoreHome, $scoreAway); ?></span>
-                    <?php echo cslf_match_spotlight_render_team($away, $scoreAway, $status, 'away'); ?>
+                    <?php echo cslf_match_spotlight_render_team($away, $scoreAway, $status, 'away', $awayLoser); ?>
                 </div>
             </article>
             <?php endforeach; ?>
@@ -228,8 +295,16 @@ function cslf_match_spotlight_is_moroccan(array $fixture) {
 function cslf_match_spotlight_time_label(array $fixture, $timezone) {
     $status = strtoupper((string) ($fixture['fixture']['status']['short'] ?? ''));
     $elapsed = $fixture['fixture']['status']['elapsed'] ?? null;
-
-    if (in_array($status, ['FT', 'AET'], true)) {
+    $penaltyHome = $fixture['score']['penalty']['home'] ?? null;
+    $penaltyAway = $fixture['score']['penalty']['away'] ?? null;
+    
+    // Vérifier si le match est terminé (FT, AET, ou pénalties terminées)
+    // Si les pénalties ont un score final, le match est terminé
+    $hasFinalPenalties = ($penaltyHome !== null && $penaltyAway !== null);
+    $isFinished = in_array($status, ['FT', 'AET'], true) || 
+                  (in_array($status, ['PEN', 'P'], true) && $hasFinalPenalties);
+    
+    if ($isFinished) {
         return __('Terminé', 'csport-live-foot');
     }
 
@@ -237,7 +312,7 @@ function cslf_match_spotlight_time_label(array $fixture, $timezone) {
         return __('Mi-temps', 'csport-live-foot');
     }
 
-    if (in_array($status, ['1H', '2H', 'LIVE', 'ET', 'P'], true) && $elapsed) {
+    if (in_array($status, ['1H', '2H', 'LIVE', 'ET', 'P', 'PEN'], true) && $elapsed) {
         return sprintf(__('%d′', 'csport-live-foot'), intval($elapsed));
     }
 
@@ -249,6 +324,17 @@ function cslf_match_spotlight_time_label(array $fixture, $timezone) {
     try {
         $dt = new DateTime($date);
         $dt->setTimezone(new DateTimeZone($timezone));
+        
+        // Vérifier si c'est aujourd'hui
+        $today = new DateTime('now', new DateTimeZone($timezone));
+        $today->setTime(0, 0, 0);
+        $matchDate = clone $dt;
+        $matchDate->setTime(0, 0, 0);
+        
+        if ($matchDate == $today) {
+            return __('Aujourd\'hui', 'csport-live-foot') . ' ' . $dt->format('H:i');
+        }
+        
         $formatter = new IntlDateFormatter('fr_FR', IntlDateFormatter::FULL, IntlDateFormatter::SHORT, $timezone, IntlDateFormatter::GREGORIAN, 'EEE d MMM HH:mm');
         $label = $formatter->format($dt);
         return $label ?: $dt->format('d/m H:i');
@@ -259,7 +345,8 @@ function cslf_match_spotlight_time_label(array $fixture, $timezone) {
 
 function cslf_match_spotlight_score_label($status, $scoreHome, $scoreAway) {
     $status = strtoupper((string) $status);
-    if (in_array($status, ['FT', 'AET', 'ET', 'P', 'LIVE', 'HT', '1H', '2H'], true)) {
+    // Afficher le score si le match est en cours, terminé, ou en pénalties
+    if (in_array($status, ['FT', 'AET', 'ET', 'P', 'PEN', 'LIVE', 'HT', '1H', '2H'], true)) {
         if ($scoreHome === null || $scoreAway === null) {
             return '—';
         }
@@ -268,7 +355,7 @@ function cslf_match_spotlight_score_label($status, $scoreHome, $scoreAway) {
     return 'vs';
 }
 
-function cslf_match_spotlight_render_team($team, $score, $status, $position) {
+function cslf_match_spotlight_render_team($team, $score, $status, $position, $isLoser = false) {
     $nameRaw = $team['name'] ?? '';
     $name = preg_replace('/\b(U|W)\d+$/i', '', $nameRaw);
     $name = trim($name);
@@ -278,6 +365,9 @@ function cslf_match_spotlight_render_team($team, $score, $status, $position) {
     $name = cslf_match_spotlight_translate_label($name);
     $logo = $team['logo'] ?? '';
     $klass = 'cslf-spotlight__team cslf-spotlight__team--' . esc_attr($position);
+    if ($isLoser) {
+        $klass .= ' cslf-spotlight__team--loser';
+    }
 
     ob_start();
     ?>

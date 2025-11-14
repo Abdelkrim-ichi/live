@@ -60,30 +60,19 @@
           ]
         },
         {
-          group: "Matchs amicaux internationaux",
-          competitions: [
-            { id: 10, name: "Friendlies" }
-          ]
-        },
-        {
-          group: "Monde - Sélections (FIFA & JO)",
+          group: "Finales officielles - Monde",
           competitions: [
             { id: 1,   name: "FIFA World Cup" },
             { id: 15,  name: "FIFA Club World Cup" },
-            { id: 37,  name: "World Cup - Qualification Intercontinental Play-offs" },
-            { id: 29,  name: "World Cup - Qualification Africa" },
-            { id: 30,  name: "World Cup - Qualification Asia" },
-            { id: 31,  name: "World Cup - Qualification CONCACAF" },
-            { id: 32,  name: "World Cup - Qualification Europe" },
-            { id: 33,  name: "World Cup - Qualification Oceania" },
-            { id: 34,  name: "World Cup - Qualification South America" },
             { id: 480, name: "Olympics Men" },
-            { id: 524, name: "Olympics Women" },
-            { id: 881, name: "Olympics Men - Qualification Concacaf" },
-            { id: 882, name: "Olympics Women - Qualification Asia" },
-            { id: 1047, name: "Olympics Women - Qualification CAF" },
-            { id: 880, name: "World Cup - Women - Qualification Europe" },
-            { id: 927, name: "World Cup - Women - Qualification CONCACAF" }
+            { id: 524, name: "Olympics Women" }
+          ]
+        },
+        {
+          group: "Afrique (CAF) - Sélections",
+          competitions: [
+            { id: 6,   name: "Coupe d'Afrique des Nations (CAN)" },
+            { id: 19,  name: "CHAN (Championnat d'Afrique des Nations)" }
           ]
         },
         {
@@ -94,15 +83,30 @@
           ]
         },
         {
+          group: "Qualifications officielles - Monde",
+          competitions: [
+            { id: 37,  name: "World Cup - Qualification Intercontinental Play-offs" },
+            { id: 29,  name: "World Cup - Qualification Africa" },
+            { id: 30,  name: "World Cup - Qualification Asia" },
+            { id: 31,  name: "World Cup - Qualification CONCACAF" },
+            { id: 32,  name: "World Cup - Qualification Europe" },
+            { id: 33,  name: "World Cup - Qualification Oceania" },
+            { id: 34,  name: "World Cup - Qualification South America" },
+            { id: 881, name: "Olympics Men - Qualification Concacaf" },
+            { id: 882, name: "Olympics Women - Qualification Asia" },
+            { id: 1047, name: "Olympics Women - Qualification CAF" },
+            { id: 880, name: "World Cup - Women - Qualification Europe" },
+            { id: 927, name: "World Cup - Women - Qualification CONCACAF" },
+            { id: 1163, name: "African Nations Championship - Qualification" }
+          ]
+        },
+        {
           group: "Europe (UEFA) - Clubs",
           competitions: [
             { id: 2,   name: "UEFA Champions League" },
             { id: 3,   name: "UEFA Europa League" },
             { id: 848, name: "UEFA Europa Conference League" },
-            { id: 531, name: "UEFA Super Cup" },
-            { id: 525, name: "UEFA Champions League Women" },
-            { id: 743, name: "UEFA Championship - Women (Euro Féminin)" },
-            { id: 1040, name: "UEFA Nations League - Women" }
+            { id: 531, name: "UEFA Super Cup" }
           ]
         },
         {
@@ -116,11 +120,18 @@
           ]
         },
         {
-          group: "Afrique (CAF) - Sélections",
+          group: "Matchs amicaux internationaux",
           competitions: [
-            { id: 6,   name: "Coupe d'Afrique des Nations (CAN)" },
-            { id: 19,  name: "CHAN (Championnat d'Afrique des Nations)" },
-            { id: 1163, name: "African Nations Championship - Qualification" }
+            { id: 10, name: "Friendlies" }
+          ]
+        },
+        {
+          group: "Compétitions féminines",
+          competitions: [
+            { id: 525, name: "UEFA Champions League Women" },
+            { id: 743, name: "UEFA Championship - Women (Euro Féminin)" },
+            { id: 1040, name: "UEFA Nations League - Women" },
+            { id: 1164, name: "CAF Women's Champions League" }
           ]
         },
         {
@@ -129,8 +140,7 @@
             { id: 12,  name: "CAF Champions League" },
             { id: 20,  name: "CAF Confederation Cup" },
             { id: 533, name: "CAF Super Cup" },
-            { id: 1043, name: "African Football League" },
-            { id: 1164, name: "CAF Women's Champions League" }
+            { id: 1043, name: "African Football League" }
           ]
         },
         {
@@ -381,7 +391,8 @@
     }
 
     function isMoroccoTeam(n) {
-      return hasTxt(n, ["morocco", "maroc", "المغرب"])
+      if (!n) return false
+      return hasTxt(n, ["morocco", "maroc", "المغرب", "raja", "wydad", "far", "as far", "fath", "fath union", "moghreb", "moghreb tetouan", "olympic", "olympic safi", "hassania", "difaa", "difaa hassani", "irt", "irt tanger", "rapid", "rapid oued zem", "chabab", "chabab mohammédia", "nahda", "nahda berkane", "youssoufia", "youssoufia berrechid", "botola"])
     }
 
     function involvesBarcaOrReal(h, a) {
@@ -435,9 +446,9 @@
       const home = m?.teams?.home?.name || ""
       const away = m?.teams?.away?.name || ""
 
-      // RÈGLE 1: Maroc prioritaire dans toutes les compétitions internationales
-      if (PRIORITY_CONFIG.rules.morocco_first_when_international &&
-          (isMoroccoTeam(home) || isMoroccoTeam(away))) {
+      // RÈGLE 1: Maroc TOUJOURS prioritaire (toutes compétitions SAUF amicaux)
+      const isFriendly = id === 10 || hasTxt(name, FRIENDLY_KEYWORDS)
+      if ((isMoroccoTeam(home) || isMoroccoTeam(away)) && !isFriendly) {
         const isWorldCup = hasTxt(name, WORLD_CUP_KEYWORDS)
         const isAfricaCup = hasTxt(name, AFRICA_CUP_KEYWORDS)
         const base = getCompetitionPriority(id, name)
@@ -446,6 +457,12 @@
         else if (isAfricaCup) secondary = -15
         else secondary = -10
         return [-1, secondary]
+      }
+      
+      // Pour les amicaux du Maroc, utiliser la priorité normale du groupe amicaux
+      if ((isMoroccoTeam(home) || isMoroccoTeam(away)) && isFriendly) {
+        const basePriority = getCompetitionPriority(id, name)
+        return [basePriority[0], -10] // Priorité du groupe amicaux mais en premier dans ce groupe
       }
 
       // Obtenir la priorité de base de la compétition
@@ -479,6 +496,24 @@
       return Object.values(by).sort((a, b) => {
         const [ka, ia] = leaguePriority({ league: a }),
           [kb, ib] = leaguePriority({ league: b })
+        
+        // Si même priorité, vérifier si un groupe contient le Maroc
+        if (ka === kb && ia === ib) {
+          const hasMoroccoA = a.m.some(m => {
+            const h = m.teams?.home?.name || ""
+            const away = m.teams?.away?.name || ""
+            return isMoroccoTeam(h) || isMoroccoTeam(away)
+          })
+          const hasMoroccoB = b.m.some(m => {
+            const h = m.teams?.home?.name || ""
+            const away = m.teams?.away?.name || ""
+            return isMoroccoTeam(h) || isMoroccoTeam(away)
+          })
+          
+          if (hasMoroccoA && !hasMoroccoB) return -1
+          if (!hasMoroccoA && hasMoroccoB) return 1
+        }
+        
         return ka !== kb ? ka - kb : ia !== ib ? ia - ib : (a.name || "").localeCompare(b.name || "")
       })
     }
@@ -689,6 +724,19 @@
         listEl.className = "cslf-match-list"
 
         const matches = [...G.m].sort((a, b) => {
+          const hA = a.teams?.home?.name || ""
+          const aA = a.teams?.away?.name || ""
+          const hB = b.teams?.home?.name || ""
+          const aB = b.teams?.away?.name || ""
+          
+          const isMoroccoA = isMoroccoTeam(hA) || isMoroccoTeam(aA)
+          const isMoroccoB = isMoroccoTeam(hB) || isMoroccoTeam(aB)
+          
+          // Maroc toujours en premier
+          if (isMoroccoA && !isMoroccoB) return -1
+          if (!isMoroccoA && isMoroccoB) return 1
+          
+          // Sinon trier par date
           const da = new Date(a.fixture?.date || 0).getTime()
           const db = new Date(b.fixture?.date || 0).getTime()
           return da - db
@@ -704,17 +752,55 @@
           const venue = m.fixture?.venue?.name || ""
           const [homeName] = translateTeamName(h.name || "")
           const [awayName] = translateTeamName(a.name || "")
+          
+          // Gérer les pénalties et tirs au but
+          const penaltyHome = m.score?.penalty?.home
+          const penaltyAway = m.score?.penalty?.away
+          const statusShort = String(st.short || "").toUpperCase()
+          const isFinished = ["FT", "AET"].includes(statusShort)
+          const isPenaltiesLive = statusShort === "PEN" || statusShort === "P"
+          const hasPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                               penaltyAway !== null && penaltyAway !== undefined) || isPenaltiesLive
+          
+          // Afficher les pénalties seulement si elles sont en cours (pas terminé)
+          let penaltyDisplay = ""
+          if (hasPenalties && !isFinished) {
+            if (penaltyHome !== null && penaltyHome !== undefined && 
+                penaltyAway !== null && penaltyAway !== undefined) {
+              penaltyDisplay = `<div class="cslf-penalties">Pen: ${penaltyHome}-${penaltyAway}</div>`
+            } else if (isPenaltiesLive) {
+              penaltyDisplay = `<div class="cslf-penalties">Pen:</div>`
+            }
+          }
+          
+          // Déterminer l'équipe perdante et si c'est une qualification
+          const isQualification = hasTxt(round || "", ["qualification", "qualif", "qualifying", "playoff", "play-off", "barrage"]) ||
+                                 hasTxt(m.league?.name || "", ["qualification", "qualif", "qualifying"])
+          let homeClass = ""
+          let awayClass = ""
+          
+          // Barrer l'équipe perdante si le match est terminé avec pénalties et ce n'est pas une qualification
+          if (isFinished && penaltyHome !== null && penaltyAway !== null && !isQualification) {
+            if (penaltyHome < penaltyAway) {
+              homeClass = "cslf-loser"
+            } else if (penaltyAway < penaltyHome) {
+              awayClass = "cslf-loser"
+            }
+          }
 
           const row = d.createElement("div")
           row.className = "cslf-match-row"
           row.innerHTML = `
     <div class="cslf-match-line">
-      <div class="team home">
+      <div class="team home ${homeClass}">
         ${h.logo ? `<img src="${h.logo}" alt="${homeName || h.name || ""}">` : ""}
         <span>${homeName}</span>
       </div>
-      <div class="score">${gh}&nbsp;-&nbsp;${ga}</div>
-      <div class="team away">
+      <div class="score">
+        <div>${gh}&nbsp;-&nbsp;${ga}</div>
+        ${penaltyDisplay}
+      </div>
+      <div class="team away ${awayClass}">
         ${a.logo ? `<img src="${a.logo}" alt="${awayName || a.name || ""}">` : ""}
         <span>${awayName}</span>
       </div>
