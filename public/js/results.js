@@ -662,25 +662,55 @@
       initSelect2()
     }
 
-    function fmtTime(iso) {
+    function fmtTime(iso, status, penaltyHome, penaltyAway) {
       try {
         if (!iso) return ""
+        
+        // Vérifier si le match est terminé (EXACTEMENT comme spotlight)
+        const statusShort = status?.short ? String(status.short).toUpperCase() : ""
+        const hasFinalPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                                   penaltyAway !== null && penaltyAway !== undefined)
+        
+        // Match terminé si : FT/AET (peu importe les pénalties), OU (PEN/P avec pénalties finales)
+        const isFinished = ["FT", "AET"].includes(statusShort) || 
+                          (["PEN", "P"].includes(statusShort) && hasFinalPenalties)
+        
+        // Si le match est terminé, afficher "Terminé" (comme spotlight)
+        if (isFinished) {
+          return "Terminé"
+        }
+        
+        // Sinon, continuer avec la logique de date (comme spotlight)
         const matchDate = new Date(iso)
         const today = new Date()
         const isToday = matchDate.toDateString() === today.toDateString()
         const timeStr = matchDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        
         return isToday ? `Aujourd'hui ${timeStr}` : timeStr
       } catch (e) {
         return ""
       }
     }
 
-    function badge(status) {
+    function badge(status, penaltyHome, penaltyAway) {
       if (!status) return `<span class="sub"></span>`
       const st = status.short
       const elapsed = Number(status.elapsed) || 0
+      const statusShort = String(st || "").toUpperCase()
+      const hasFinalPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                                 penaltyAway !== null && penaltyAway !== undefined)
+      
+      // Vérifier si le match est terminé (même logique que spotlight)
+      const isFinished = ["FT", "AET"].includes(statusShort) || 
+                        (["PEN", "P"].includes(statusShort) && hasFinalPenalties)
+      
+      // Si terminé, afficher "Fin"
+      if (isFinished) {
+        return `<span class="sub">Fin</span>`
+      }
+      
       const map = { "1H": "1re", "2H": "2e", HT: "Mi-temps", ET: "Prol.", P: "Tab", FT: "Fin", NS: "À venir" }
-      const isLive = st && st !== "NS" && st !== "FT" && st !== "HT"
+      const isLive = st && st !== "NS" && st !== "FT" && st !== "HT" && st !== "AET"
       if (isLive) {
         const minute = elapsed > 0 ? `${elapsed}'` : "LIVE"
         return `<span class="cslf-live">${minute}</span>`
@@ -758,24 +788,24 @@
           const [homeName] = translateTeamName(h.name || "")
           const [awayName] = translateTeamName(a.name || "")
           
-          // Gérer les pénalties et tirs au but
+          // Gérer les pénalties et tirs au but (même logique que spotlight)
           const penaltyHome = m.score?.penalty?.home
           const penaltyAway = m.score?.penalty?.away
           const statusShort = String(st.short || "").toUpperCase()
-          const isFinished = ["FT", "AET"].includes(statusShort)
-          const isPenaltiesLive = statusShort === "PEN" || statusShort === "P"
-          const hasPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
-                               penaltyAway !== null && penaltyAway !== undefined) || isPenaltiesLive
+          const hasFinalPenalties = (penaltyHome !== null && penaltyHome !== undefined && 
+                                    penaltyAway !== null && penaltyAway !== undefined)
+          // Match terminé avec pénalties si : FT/AET avec pénalties, ou statut PEN avec pénalties finales
+          const isFinishedWithPenalties = (["FT", "AET", "PEN", "P"].includes(statusShort) && hasFinalPenalties)
+          const isPenaltiesLive = (statusShort === "PEN" || statusShort === "P") && !hasFinalPenalties
           
-          // Afficher les pénalties seulement si elles sont en cours (pas terminé)
+          // Afficher les pénalties si elles sont terminées ou en cours
           let penaltyDisplay = ""
-          if (hasPenalties && !isFinished) {
-            if (penaltyHome !== null && penaltyHome !== undefined && 
-                penaltyAway !== null && penaltyAway !== undefined) {
-              penaltyDisplay = `<div class="cslf-penalties">Pen: ${penaltyHome}-${penaltyAway}</div>`
-            } else if (isPenaltiesLive) {
-              penaltyDisplay = `<div class="cslf-penalties">Pen:</div>`
-            }
+          if (isFinishedWithPenalties) {
+            // Pénalties terminées : afficher les scores
+            penaltyDisplay = `<div class="cslf-penalties">Pen: ${penaltyHome}-${penaltyAway}</div>`
+          } else if (isPenaltiesLive) {
+            // Pénalties en cours : afficher juste "Pen:"
+            penaltyDisplay = `<div class="cslf-penalties">Pen:</div>`
           }
           
           // Déterminer l'équipe perdante et si c'est une qualification
@@ -785,7 +815,7 @@
           let awayClass = ""
           
           // Barrer l'équipe perdante si le match est terminé avec pénalties et ce n'est pas une qualification
-          if (isFinished && penaltyHome !== null && penaltyAway !== null && !isQualification) {
+          if (isFinishedWithPenalties && !isQualification) {
             if (penaltyHome < penaltyAway) {
               homeClass = "cslf-loser"
             } else if (penaltyAway < penaltyHome) {
@@ -811,8 +841,8 @@
       </div>
     </div>
     <div class="meta">
-      ${badge(st)}
-      <span class="time">${fmtTime(m.fixture?.date)}</span>
+      ${badge(st, penaltyHome, penaltyAway)}
+      <span class="time">${fmtTime(m.fixture?.date, m.fixture?.status, penaltyHome, penaltyAway)}</span>
       <span class="extra">${round || venue}</span>
     </div>
   `
